@@ -1,0 +1,519 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A01495A2E74663C00912C93 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0149592E74663C00912C93 /* Kingfisher */; };
+		0A246A2A2E7709A4009C1716 /* YandexMapsMobile.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */; };
+		0A246A2B2E7709A4009C1716 /* YandexMapsMobile.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		0A3FCE772E746847006A1EC9 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE762E746847006A1EC9 /* Kingfisher */; };
+		0A3FCE7A2E746886006A1EC9 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE792E746886006A1EC9 /* Auth */; };
+		0A3FCE7C2E746886006A1EC9 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7B2E746886006A1EC9 /* Functions */; };
+		0A3FCE7E2E746886006A1EC9 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7D2E746886006A1EC9 /* PostgREST */; };
+		0A3FCE802E746886006A1EC9 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7F2E746886006A1EC9 /* Realtime */; };
+		0A3FCE822E746886006A1EC9 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE812E746886006A1EC9 /* Storage */; };
+		0A3FCE842E746895006A1EC9 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE832E746895006A1EC9 /* Supabase */; };
+		43C75B8ACEF4FFABC81C349D /* Pods_PetFinderApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A57113CA93E5BDF13978D425 /* Pods_PetFinderApp.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0A89475F2E746E25002E1C66 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				0A246A2B2E7709A4009C1716 /* YandexMapsMobile.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0A1DD6022E6E329A003F7460 /* PetFinderApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetFinderApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = YandexMapsMobile.xcframework; path = Pods/YandexMapsMobile/YandexMapsMobile.xcframework; sourceTree = "<group>"; };
+		244AF4C2E3DAEEFBCFE87A8C /* Pods-PetFinderApp.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetFinderApp.debug.xcconfig"; path = "Target Support Files/Pods-PetFinderApp/Pods-PetFinderApp.debug.xcconfig"; sourceTree = "<group>"; };
+		846403DCD1A175015551A637 /* Pods-PetFinderApp.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PetFinderApp.release.xcconfig"; path = "Target Support Files/Pods-PetFinderApp/Pods-PetFinderApp.release.xcconfig"; sourceTree = "<group>"; };
+		A57113CA93E5BDF13978D425 /* Pods_PetFinderApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_PetFinderApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0A1DD62A2E6E329C003F7460 /* Exceptions for "PetFinderApp" folder in "PetFinderApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0A1DD6012E6E329A003F7460 /* PetFinderApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0A1DD6042E6E329A003F7460 /* PetFinderApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0A1DD62A2E6E329C003F7460 /* Exceptions for "PetFinderApp" folder in "PetFinderApp" target */,
+			);
+			path = PetFinderApp;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0A1DD5FF2E6E329A003F7460 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A3FCE802E746886006A1EC9 /* Realtime in Frameworks */,
+				0A3FCE7E2E746886006A1EC9 /* PostgREST in Frameworks */,
+				0A3FCE7C2E746886006A1EC9 /* Functions in Frameworks */,
+				0A01495A2E74663C00912C93 /* Kingfisher in Frameworks */,
+				0A3FCE822E746886006A1EC9 /* Storage in Frameworks */,
+				0A246A2A2E7709A4009C1716 /* YandexMapsMobile.xcframework in Frameworks */,
+				0A3FCE842E746895006A1EC9 /* Supabase in Frameworks */,
+				0A3FCE772E746847006A1EC9 /* Kingfisher in Frameworks */,
+				0A3FCE7A2E746886006A1EC9 /* Auth in Frameworks */,
+				43C75B8ACEF4FFABC81C349D /* Pods_PetFinderApp.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A1DD5F92E6E329A003F7460 = {
+			isa = PBXGroup;
+			children = (
+				0A1DD6042E6E329A003F7460 /* PetFinderApp */,
+				0A1DD6032E6E329A003F7460 /* Products */,
+				57D012295AFDD5BB13F5154E /* Pods */,
+				A9A30C88C471003803F8E5D4 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		0A1DD6032E6E329A003F7460 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0A1DD6022E6E329A003F7460 /* PetFinderApp.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		57D012295AFDD5BB13F5154E /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				244AF4C2E3DAEEFBCFE87A8C /* Pods-PetFinderApp.debug.xcconfig */,
+				846403DCD1A175015551A637 /* Pods-PetFinderApp.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		A9A30C88C471003803F8E5D4 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */,
+				A57113CA93E5BDF13978D425 /* Pods_PetFinderApp.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0A1DD6012E6E329A003F7460 /* PetFinderApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0A1DD62B2E6E329C003F7460 /* Build configuration list for PBXNativeTarget "PetFinderApp" */;
+			buildPhases = (
+				FD191C924B0A290254F6514D /* [CP] Check Pods Manifest.lock */,
+				0A1DD5FE2E6E329A003F7460 /* Sources */,
+				0A1DD5FF2E6E329A003F7460 /* Frameworks */,
+				0A1DD6002E6E329A003F7460 /* Resources */,
+				0A89475F2E746E25002E1C66 /* Embed Frameworks */,
+				77CB5B2567F769A7A8277066 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0A1DD6042E6E329A003F7460 /* PetFinderApp */,
+			);
+			name = PetFinderApp;
+			productName = PetFinderApp;
+			productReference = 0A1DD6022E6E329A003F7460 /* PetFinderApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0A1DD5FA2E6E329A003F7460 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					0A1DD6012E6E329A003F7460 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+				};
+			};
+			buildConfigurationList = 0A1DD5FD2E6E329A003F7460 /* Build configuration list for PBXProject "PetFinderApp" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 0A1DD5F92E6E329A003F7460;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0A1DD6032E6E329A003F7460 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0A1DD6012E6E329A003F7460 /* PetFinderApp */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0A1DD6002E6E329A003F7460 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		77CB5B2567F769A7A8277066 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-PetFinderApp/Pods-PetFinderApp-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-PetFinderApp/Pods-PetFinderApp-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-PetFinderApp/Pods-PetFinderApp-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FD191C924B0A290254F6514D /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-PetFinderApp-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0A1DD5FE2E6E329A003F7460 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0A1DD62C2E6E329C003F7460 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 244AF4C2E3DAEEFBCFE87A8C /* Pods-PetFinderApp.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FC82H65FCJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetFinderApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vilinaolkhovskaya.PetFinderApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		0A1DD62D2E6E329C003F7460 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 846403DCD1A175015551A637 /* Pods-PetFinderApp.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FC82H65FCJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetFinderApp/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.vilinaolkhovskaya.PetFinderApp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0A1DD62E2E6E329C003F7460 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FC82H65FCJ;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		0A1DD62F2E6E329C003F7460 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FC82H65FCJ;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0A1DD5FD2E6E329A003F7460 /* Build configuration list for PBXProject "PetFinderApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A1DD62E2E6E329C003F7460 /* Debug */,
+				0A1DD62F2E6E329C003F7460 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0A1DD62B2E6E329C003F7460 /* Build configuration list for PBXNativeTarget "PetFinderApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0A1DD62C2E6E329C003F7460 /* Debug */,
+				0A1DD62D2E6E329C003F7460 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.5.0;
+			};
+		};
+		0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0A0149592E74663C00912C93 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		0A3FCE762E746847006A1EC9 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
+		};
+		0A3FCE792E746886006A1EC9 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		0A3FCE7B2E746886006A1EC9 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		0A3FCE7D2E746886006A1EC9 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		0A3FCE7F2E746886006A1EC9 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		0A3FCE812E746886006A1EC9 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		0A3FCE832E746895006A1EC9 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 0A1DD5FA2E6E329A003F7460 /* Project object */;
+}
