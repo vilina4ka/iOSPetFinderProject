@@ -1,0 +1,39 @@
+services:
+
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lapki
+      POSTGRES_USER: lapki
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lapki -d lapki"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://lapki:${DB_PASSWORD}@db/lapki?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET}
+      YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID}
+      YANDEX_SECRET: ${YANDEX_SECRET}
+      YANDEX_GPT_KEY: ${YANDEX_GPT_KEY}
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      PORT: 8080
+      S3_KEY_ID: ${S3_KEY_ID}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: ${S3_BUCKET:-lapki-photos}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:   # данные БД — не теряются при перезапуске

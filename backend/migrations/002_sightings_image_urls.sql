@@ -1,0 +1,2 @@
+ALTER TABLE sightings
+    ADD COLUMN IF NOT EXISTS image_urls TEXT[] DEFAULT ARRAY[]::TEXT[];
