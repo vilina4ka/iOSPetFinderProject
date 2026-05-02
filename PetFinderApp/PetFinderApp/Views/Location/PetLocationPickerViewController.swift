@@ -4,8 +4,6 @@
 //
 //  Created by Вилина Ольховская on 02.09.2025.
 //
-
-
 import UIKit
 import YandexMapsMobile
 import CoreLocation

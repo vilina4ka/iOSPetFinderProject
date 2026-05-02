@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 03.09.2025.
 //
-
 import UIKit
 import Kingfisher
 
@@ -75,7 +74,7 @@ final class PetTableViewCell: UITableViewCell {
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = .systemFont(ofSize: 12, weight: .medium)
         label.textColor = .white
-        label.backgroundColor = .systemBlue
+        label.backgroundColor = .accent
         label.textAlignment = .center
         label.layer.cornerRadius = 8
         label.layer.masksToBounds = true
@@ -95,6 +94,7 @@ final class PetTableViewCell: UITableViewCell {
         label.isHidden = true
         return label
     }()
+
 
     // MARK: - Initialization
     
@@ -155,7 +155,8 @@ final class PetTableViewCell: UITableViewCell {
             foundBadgeLabel.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
             foundBadgeLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
             foundBadgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 56),
-            foundBadgeLabel.heightAnchor.constraint(equalToConstant: 24)
+            foundBadgeLabel.heightAnchor.constraint(equalToConstant: 24),
+
         ])
     }
     
@@ -167,7 +168,7 @@ final class PetTableViewCell: UITableViewCell {
         } else {
             petImageView.image = UIImage(systemName: "pawprint.fill")
         }
-        
+
         titleLabel.text = pet.breed
         nameLabel.text = "Кличка: \(pet.name)"
         descriptionLabel.text = pet.externalSigns
@@ -178,11 +179,10 @@ final class PetTableViewCell: UITableViewCell {
 
         let isFound = pet.status == "found"
         foundBadgeLabel.isHidden = !isFound
-        if isFound {
-            containerView.alpha = 0.75
-        } else {
-            containerView.alpha = 1.0
-        }
+        containerView.alpha = isFound ? 0.75 : 1.0
+
+        let isOwn = pet.ownerId == AuthManager.shared.currentUser?.id
+        containerView.backgroundColor = isOwn ? .accent.withAlphaComponent(0.06) : .systemBackground
     }
 
     override func prepareForReuse() {
@@ -191,6 +191,7 @@ final class PetTableViewCell: UITableViewCell {
         petImageView.image = nil
         foundBadgeLabel.isHidden = true
         containerView.alpha = 1.0
+        containerView.backgroundColor = .systemBackground
     }
 }
 

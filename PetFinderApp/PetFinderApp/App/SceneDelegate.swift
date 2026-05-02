@@ -96,7 +96,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         let tabBar = UITabBarController()
         tabBar.viewControllers = [feedNav, chatsNav, profileNav]
-        tabBar.tabBar.tintColor = .systemBlue
+        tabBar.tabBar.tintColor = .accent
 
         window?.rootViewController = tabBar
         window?.makeKeyAndVisible()

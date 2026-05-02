@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 12.02.2026.
 //
-
 import Foundation
 import KeychainAccess
 
@@ -145,8 +144,8 @@ final class APIClient {
             throw APIError.unknown
         }
     }
-
-    func upload(imageData: Data, filename: String) async throws -> String {
+    
+    func upload(data: Data, filename: String, mimeType: String = "application/octet-stream") async throws -> UploadResponse {
         let boundary = UUID().uuidString
         let url = URL(string: baseURL + "/upload")!
 
@@ -159,29 +158,23 @@ final class APIClient {
         }
 
         var body = Data()
-
-        let boundaryPrefix = "--\(boundary)\r\n"
-        body.append(Data(boundaryPrefix.utf8))
+        body.append(Data("--\(boundary)\r\n".utf8))
         body.append(Data("Content-Disposition: form-data; name=\"image\"; filename=\"\(filename)\"\r\n".utf8))
-        body.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
-        body.append(imageData)
+        body.append(Data("Content-Type: \(mimeType)\r\n\r\n".utf8))
+        body.append(data)
         body.append(Data("\r\n--\(boundary)--\r\n".utf8))
-
         request.httpBody = body
 
-
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (responseData, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.unknown
         }
-
         guard (200...299).contains(httpResponse.statusCode) else {
             throw APIError.server("Ошибка загрузки: \(httpResponse.statusCode)")
         }
 
-        let uploadResponse = try apiDecoder.decode(UploadResponse.self, from: data)
-        return uploadResponse.url
+        return try apiDecoder.decode(UploadResponse.self, from: responseData)
     }
 }
 
@@ -218,6 +211,7 @@ struct ErrorResponse: Decodable {
 
 struct UploadResponse: Decodable {
     let url: String
+    let fileName: String?
 }
 
 struct EmptyResponse: Decodable {}

@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 07.09.2025.
 //
-
 import UIKit
 
 class PhotoCell: UICollectionViewCell {

@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 28.03.2026.
 //
-
 import UIKit
 import Kingfisher
 
@@ -236,7 +235,7 @@ private final class SightingCell: UITableViewCell {
             }
         }
 
-        addressLabel.text = "📍 \(sighting.address)"
+        addressLabel.setLocationText(sighting.address)
 
         let name = sighting.reporterName.isEmpty ? "Аноним" : sighting.reporterName
         let dateStr = sighting.createdAt.map { formatDate($0) } ?? ""

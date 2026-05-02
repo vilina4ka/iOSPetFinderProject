@@ -4,11 +4,14 @@
 //
 //  Created by Вилина Ольховская on 07.09.2025.
 //
-
 import UIKit
 import Kingfisher
 
 class ProfileViewController: UIViewController {
+
+    // MARK: - ViewModel
+
+    private let viewModel = ProfileViewModel()
 
     // MARK: - UI Elements
 
@@ -176,7 +179,7 @@ class ProfileViewController: UIViewController {
     }
 
     private func updateUserInfo() {
-        if let user = AuthManager.shared.currentUser {
+        if let user = viewModel.user {
             nameLabel.text = user.name
             emailLabel.text = user.email ?? ""
             emailLabel.isHidden = (user.email == nil || user.email?.isEmpty == true)
@@ -229,13 +232,11 @@ class ProfileViewController: UIViewController {
     @objc private func signOutTapped() {
         Task {
             do {
-                try await AuthManager.shared.signOut()
-
+                try await viewModel.signOut()
                 if let window = view.window, let sceneDelegate = window.windowScene?.delegate as? SceneDelegate {
                     sceneDelegate.showLoginScreen(on: window.windowScene!)
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 }

@@ -11,30 +11,6 @@ import AuthenticationServices
 import KeychainAccess
 import Combine
 
-// MARK: - Models
-
-struct AppUser: Identifiable, Decodable {
-    let id: String
-    let name: String
-    let email: String?
-    let avatarURL: String?
-    let phone: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id, name, email, phone
-        case avatarURL = "avatarUrl"
-    }
-}
-
-struct LoginResponse: Decodable {
-    let token: String
-    let user: AppUser
-}
-
-struct YandexLoginRequest: Encodable {
-    let code: String
-}
-
 // MARK: - AuthManager
 
 @MainActor

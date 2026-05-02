@@ -4,32 +4,21 @@
 //
 //  Created by Вилина Ольховская on 27.03.2026.
 //
-
 import UIKit
 import CoreLocation
 import PhotosUI
-
-// MARK: - Request model
-
-private struct SightingRequest: Encodable {
-    let latitude: Double
-    let longitude: Double
-    let address: String
-    let comment: String
-    let imageUrls: [String]
-}
 
 // MARK: - ReportSightingViewController
 
 final class ReportSightingViewController: UIViewController {
 
-    // MARK: - Properties
+    // MARK: - ViewModel
 
-    private let pet: Pet
-    private var currentLocation: CLLocation?
-    private var currentAddress: String = ""
+    private let viewModel: ReportSightingViewModel
+
+    // MARK: - Location (delegate-based, stays in VC)
+
     private let locationManager = CLLocationManager()
-    private var selectedImage: UIImage?
 
     // MARK: - UI
 
@@ -62,12 +51,14 @@ final class ReportSightingViewController: UIViewController {
         return v
     }()
 
-    private let locationIconLabel: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "📍"
-        label.font = .systemFont(ofSize: 24)
-        return label
+    private let locationIconView: UIImageView = {
+        let iv = UIImageView()
+        iv.translatesAutoresizingMaskIntoConstraints = false
+        iv.contentMode = .scaleAspectFit
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        iv.image = UIImage(systemName: "mappin.circle.fill", withConfiguration: config)?
+            .withTintColor(.label, renderingMode: .alwaysOriginal)
+        return iv
     }()
 
     private let locationTitleLabel: UILabel = {
@@ -85,6 +76,7 @@ final class ReportSightingViewController: UIViewController {
         label.text = "Будет отправлена как место наблюдения"
         label.font = .systemFont(ofSize: 13)
         label.textColor = .secondaryLabel
+        label.numberOfLines = 0
         return label
     }()
 
@@ -131,28 +123,55 @@ final class ReportSightingViewController: UIViewController {
         button.titleLabel?.font = .systemFont(ofSize: 20)
         button.backgroundColor = .systemGray5
         button.setTitleColor(.label, for: .normal)
-        button.layer.cornerRadius = 25
+        button.layer.cornerRadius = 16
         return button
     }()
 
-    private let photoPreviewImageView: UIImageView = {
+    // Большое превью первого фото
+    private let mainPhotoContainer: UIView = {
+        let v = UIView()
+        v.translatesAutoresizingMaskIntoConstraints = false
+        v.isHidden = true
+        return v
+    }()
+
+    private let mainPhotoImageView: UIImageView = {
         let iv = UIImageView()
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         iv.layer.cornerRadius = 12
         iv.backgroundColor = .systemGray5
-        iv.isHidden = true
+        iv.isUserInteractionEnabled = true
         return iv
     }()
 
-    private let removePhotoButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
-        button.tintColor = .white
-        button.isHidden = true
-        return button
+    private let mainPhotoRemoveButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+        btn.tintColor = .white
+        btn.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        btn.layer.cornerRadius = 14
+        return btn
+    }()
+
+    // Горизонтальная карусель для доп. фото
+    private let extraPhotosScrollView: UIScrollView = {
+        let sv = UIScrollView()
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        sv.showsHorizontalScrollIndicator = false
+        sv.isHidden = true
+        return sv
+    }()
+
+    private let extraPhotosStack: UIStackView = {
+        let sv = UIStackView()
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        sv.axis = .horizontal
+        sv.spacing = 8
+        sv.alignment = .fill
+        return sv
     }()
 
     private let sendButton: UIButton = {
@@ -160,7 +179,7 @@ final class ReportSightingViewController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Отправить репорт", for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        button.backgroundColor = .systemBlue
+        button.backgroundColor = .accent
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 16
         return button
@@ -174,10 +193,13 @@ final class ReportSightingViewController: UIViewController {
         return ai
     }()
 
+    // Нижний якорь contentView — меняется в зависимости от наличия фото
+    private var contentBottomConstraint: NSLayoutConstraint!
+
     // MARK: - Init
 
     init(pet: Pet) {
-        self.pet = pet
+        self.viewModel = ReportSightingViewModel(pet: pet)
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -207,16 +229,20 @@ final class ReportSightingViewController: UIViewController {
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
 
-        locationCard.addSubview(locationIconLabel)
+        locationCard.addSubview(locationIconView)
         locationCard.addSubview(locationTitleLabel)
         locationCard.addSubview(locationSubtitleLabel)
         locationCard.addSubview(changeLocationButton)
 
         sendButton.addSubview(activityIndicator)
-        photoPreviewImageView.addSubview(removePhotoButton)
+
+        mainPhotoContainer.addSubview(mainPhotoImageView)
+        mainPhotoContainer.addSubview(mainPhotoRemoveButton)
+
+        extraPhotosScrollView.addSubview(extraPhotosStack)
 
         [headerLabel, locationCard, commentTitleLabel, commentTextView,
-         photoTitleLabel, addPhotoButton, photoPreviewImageView].forEach {
+         photoTitleLabel, addPhotoButton, mainPhotoContainer, extraPhotosScrollView].forEach {
             contentView.addSubview($0)
         }
         view.addSubview(sendButton)
@@ -224,9 +250,12 @@ final class ReportSightingViewController: UIViewController {
         sendButton.addTarget(self, action: #selector(sendButtonTapped), for: .touchUpInside)
         changeLocationButton.addTarget(self, action: #selector(changeLocationTapped), for: .touchUpInside)
         addPhotoButton.addTarget(self, action: #selector(addPhotoTapped), for: .touchUpInside)
-        removePhotoButton.addTarget(self, action: #selector(removePhotoTapped), for: .touchUpInside)
+        mainPhotoRemoveButton.addTarget(self, action: #selector(removeMainPhotoTapped), for: .touchUpInside)
 
         let p: CGFloat = 20
+
+        // Нижний якорь contentView — по умолчанию прибит к кнопке добавить фото
+        contentBottomConstraint = addPhotoButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -p)
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -248,11 +277,13 @@ final class ReportSightingViewController: UIViewController {
             locationCard.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: p),
             locationCard.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -p),
 
-            locationIconLabel.topAnchor.constraint(equalTo: locationCard.topAnchor, constant: 16),
-            locationIconLabel.leadingAnchor.constraint(equalTo: locationCard.leadingAnchor, constant: 16),
+            locationIconView.topAnchor.constraint(equalTo: locationCard.topAnchor, constant: 16),
+            locationIconView.leadingAnchor.constraint(equalTo: locationCard.leadingAnchor, constant: 16),
+            locationIconView.widthAnchor.constraint(equalToConstant: 24),
+            locationIconView.heightAnchor.constraint(equalToConstant: 24),
 
             locationTitleLabel.topAnchor.constraint(equalTo: locationCard.topAnchor, constant: 14),
-            locationTitleLabel.leadingAnchor.constraint(equalTo: locationIconLabel.trailingAnchor, constant: 12),
+            locationTitleLabel.leadingAnchor.constraint(equalTo: locationIconView.trailingAnchor, constant: 12),
             locationTitleLabel.trailingAnchor.constraint(equalTo: changeLocationButton.leadingAnchor, constant: -8),
 
             locationSubtitleLabel.topAnchor.constraint(equalTo: locationTitleLabel.bottomAnchor, constant: 4),
@@ -279,17 +310,33 @@ final class ReportSightingViewController: UIViewController {
             addPhotoButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -p),
             addPhotoButton.heightAnchor.constraint(equalToConstant: 50),
 
-            photoPreviewImageView.topAnchor.constraint(equalTo: addPhotoButton.bottomAnchor, constant: 12),
-            photoPreviewImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: p),
-            photoPreviewImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -p),
-            photoPreviewImageView.heightAnchor.constraint(equalToConstant: 200),
+            // Большое превью
+            mainPhotoContainer.topAnchor.constraint(equalTo: addPhotoButton.bottomAnchor, constant: 12),
+            mainPhotoContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: p),
+            mainPhotoContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -p),
+            mainPhotoContainer.heightAnchor.constraint(equalToConstant: 200),
 
-            removePhotoButton.topAnchor.constraint(equalTo: photoPreviewImageView.topAnchor, constant: 8),
-            removePhotoButton.trailingAnchor.constraint(equalTo: photoPreviewImageView.trailingAnchor, constant: -8),
-            removePhotoButton.widthAnchor.constraint(equalToConstant: 32),
-            removePhotoButton.heightAnchor.constraint(equalToConstant: 32),
+            mainPhotoImageView.topAnchor.constraint(equalTo: mainPhotoContainer.topAnchor),
+            mainPhotoImageView.leadingAnchor.constraint(equalTo: mainPhotoContainer.leadingAnchor),
+            mainPhotoImageView.trailingAnchor.constraint(equalTo: mainPhotoContainer.trailingAnchor),
+            mainPhotoImageView.bottomAnchor.constraint(equalTo: mainPhotoContainer.bottomAnchor),
 
-            photoPreviewImageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -p),
+            mainPhotoRemoveButton.topAnchor.constraint(equalTo: mainPhotoContainer.topAnchor, constant: 8),
+            mainPhotoRemoveButton.trailingAnchor.constraint(equalTo: mainPhotoContainer.trailingAnchor, constant: -8),
+            mainPhotoRemoveButton.widthAnchor.constraint(equalToConstant: 28),
+            mainPhotoRemoveButton.heightAnchor.constraint(equalToConstant: 28),
+
+            // Карусель доп. фото
+            extraPhotosScrollView.topAnchor.constraint(equalTo: mainPhotoContainer.bottomAnchor, constant: 8),
+            extraPhotosScrollView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: p),
+            extraPhotosScrollView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -p),
+            extraPhotosScrollView.heightAnchor.constraint(equalToConstant: 80),
+
+            extraPhotosStack.topAnchor.constraint(equalTo: extraPhotosScrollView.topAnchor),
+            extraPhotosStack.bottomAnchor.constraint(equalTo: extraPhotosScrollView.bottomAnchor),
+            extraPhotosStack.leadingAnchor.constraint(equalTo: extraPhotosScrollView.leadingAnchor),
+            extraPhotosStack.trailingAnchor.constraint(equalTo: extraPhotosScrollView.trailingAnchor),
+            extraPhotosStack.heightAnchor.constraint(equalTo: extraPhotosScrollView.heightAnchor),
 
             sendButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: p),
             sendButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -p),
@@ -298,6 +345,8 @@ final class ReportSightingViewController: UIViewController {
 
             activityIndicator.centerXAnchor.constraint(equalTo: sendButton.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: sendButton.centerYAnchor),
+
+            contentBottomConstraint,
         ])
     }
 
@@ -310,8 +359,8 @@ final class ReportSightingViewController: UIViewController {
 
     private func requestLocation() {
         if let saved = LocationService.shared.loadLocation() {
-            currentAddress = saved.address
-            currentLocation = CLLocation(latitude: saved.latitude, longitude: saved.longitude)
+            viewModel.currentAddress = saved.address
+            viewModel.currentLocation = CLLocation(latitude: saved.latitude, longitude: saved.longitude)
             locationTitleLabel.text = saved.address
             return
         }
@@ -328,84 +377,140 @@ final class ReportSightingViewController: UIViewController {
                     .compactMap { $0 }
                     .joined(separator: ", ")
                 DispatchQueue.main.async {
-                    self.currentAddress = address.isEmpty ? "Текущее местоположение" : address
-                    self.locationTitleLabel.text = self.currentAddress
+                    let resolved = address.isEmpty ? "Текущее местоположение" : address
+                    self.viewModel.currentAddress = resolved
+                    self.locationTitleLabel.text = resolved
                 }
             }
+        }
+    }
+
+    // MARK: - Photo UI updates
+
+    private func updatePhotoUI() {
+        let images = viewModel.selectedImages
+        let count = images.count
+
+        contentBottomConstraint.isActive = false
+
+        if count == 0 {
+            mainPhotoContainer.isHidden = true
+            extraPhotosScrollView.isHidden = true
+            addPhotoButton.setTitle("+ добавить фото", for: .normal)
+            contentBottomConstraint = addPhotoButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+        } else {
+            // Показываем первое фото как обложку
+            mainPhotoContainer.isHidden = false
+            mainPhotoImageView.image = images[0]
+
+            if count > 1 {
+                // Дополнительные фото в карусели
+                extraPhotosScrollView.isHidden = false
+                rebuildExtraPhotos(Array(images.dropFirst()))
+                contentBottomConstraint = extraPhotosScrollView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+            } else {
+                extraPhotosScrollView.isHidden = true
+                contentBottomConstraint = mainPhotoContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
+            }
+
+            let title = count < 5 ? "+ добавить ещё фото (\(count)/5)" : "Максимум 5 фото"
+            addPhotoButton.setTitle(title, for: .normal)
+        }
+
+        contentBottomConstraint.isActive = true
+        view.layoutIfNeeded()
+    }
+
+    private func rebuildExtraPhotos(_ images: [UIImage]) {
+        extraPhotosStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        for (index, image) in images.enumerated() {
+            let container = UIView()
+            container.translatesAutoresizingMaskIntoConstraints = false
+            container.widthAnchor.constraint(equalToConstant: 80).isActive = true
+
+            let iv = UIImageView(image: image)
+            iv.translatesAutoresizingMaskIntoConstraints = false
+            iv.contentMode = .scaleAspectFill
+            iv.clipsToBounds = true
+            iv.layer.cornerRadius = 8
+            iv.isUserInteractionEnabled = true
+
+            let xBtn = UIButton(type: .system)
+            xBtn.translatesAutoresizingMaskIntoConstraints = false
+            xBtn.setImage(UIImage(systemName: "xmark.circle.fill"), for: .normal)
+            xBtn.tintColor = .white
+            xBtn.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+            xBtn.layer.cornerRadius = 10
+            xBtn.tag = index + 1 // +1 потому что доп. фото начинаются с индекса 1
+            xBtn.addTarget(self, action: #selector(removeExtraPhotoTapped(_:)), for: .touchUpInside)
+
+            container.addSubview(iv)
+            container.addSubview(xBtn)
+
+            NSLayoutConstraint.activate([
+                iv.topAnchor.constraint(equalTo: container.topAnchor),
+                iv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                iv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                iv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+
+                xBtn.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+                xBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -4),
+                xBtn.widthAnchor.constraint(equalToConstant: 20),
+                xBtn.heightAnchor.constraint(equalToConstant: 20),
+            ])
+
+            extraPhotosStack.addArrangedSubview(container)
         }
     }
 
     // MARK: - Actions
 
     @objc private func changeLocationTapped() {
-        let picker = LocationPickerViewController(mode: .sighting, initialLocation: currentLocation)
+        let picker = LocationPickerViewController(mode: .sighting, initialLocation: viewModel.currentLocation)
         picker.delegate = self
         navigationController?.pushViewController(picker, animated: true)
     }
 
     @objc private func addPhotoTapped() {
+        guard viewModel.selectedImages.count < 5 else { return }
         var config = PHPickerConfiguration()
-        config.selectionLimit = 1
+        config.selectionLimit = 5 - viewModel.selectedImages.count
         config.filter = .images
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = self
         present(picker, animated: true)
     }
 
-    @objc private func removePhotoTapped() {
-        selectedImage = nil
-        photoPreviewImageView.image = nil
-        photoPreviewImageView.isHidden = true
-        removePhotoButton.isHidden = true
-        addPhotoButton.setTitle("+ добавить фото", for: .normal)
+    @objc private func removeMainPhotoTapped() {
+        viewModel.selectedImages.removeFirst()
+        updatePhotoUI()
+    }
+
+    @objc private func removeExtraPhotoTapped(_ sender: UIButton) {
+        let index = sender.tag
+        guard index < viewModel.selectedImages.count else { return }
+        viewModel.selectedImages.remove(at: index)
+        updatePhotoUI()
     }
 
     @objc private func sendButtonTapped() {
-        guard let location = currentLocation else {
-            showError("Не удалось определить локацию. Попробуйте ещё раз.")
-            return
-        }
-
-        let comment = commentTextView.textColor == .placeholderText ? "" : (commentTextView.text ?? "")
+        viewModel.comment = commentTextView.textColor == .placeholderText ? "" : (commentTextView.text ?? "")
 
         sendButton.isEnabled = false
         sendButton.setTitle("", for: .normal)
         activityIndicator.startAnimating()
 
         Task {
-            do {
-                var imageUrls: [String] = []
-                if let image = selectedImage,
-                   let jpeg = image.jpegData(compressionQuality: 0.8) {
-                    let url = try await APIClient.shared.upload(imageData: jpeg, filename: "sighting_\(UUID().uuidString).jpg")
-                    imageUrls.append(url)
-                }
-
-                let request = SightingRequest(
-                    latitude: location.coordinate.latitude,
-                    longitude: location.coordinate.longitude,
-                    address: currentAddress,
-                    comment: comment,
-                    imageUrls: imageUrls
-                )
-
-                struct SightingResponse: Decodable { let id: String }
-                let _: SightingResponse = try await APIClient.shared.request(
-                    "POST",
-                    path: "/pets/\(pet.id)/sightings",
-                    body: request
-                )
-
-                await MainActor.run {
-                    self.activityIndicator.stopAnimating()
-                    self.showSuccess()
-                }
-            } catch {
-                await MainActor.run {
-                    self.activityIndicator.stopAnimating()
-                    self.sendButton.isEnabled = true
-                    self.sendButton.setTitle("Отправить репорт", for: .normal)
-                    self.showError("Не удалось отправить репорт. Попробуйте ещё раз.")
+            await viewModel.submit()
+            self.activityIndicator.stopAnimating()
+            if viewModel.didSubmit {
+                self.showSuccess()
+            } else {
+                self.sendButton.isEnabled = true
+                self.sendButton.setTitle("Отправить репорт", for: .normal)
+                if let msg = viewModel.errorMessage {
+                    self.showError(msg)
                 }
             }
         }
@@ -459,16 +564,27 @@ extension ReportSightingViewController: UITextViewDelegate {
 extension ReportSightingViewController: PHPickerViewControllerDelegate {
     func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
         picker.dismiss(animated: true)
-        guard let result = results.first else { return }
-        result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
-            guard let self = self, let image = object as? UIImage else { return }
-            DispatchQueue.main.async {
-                self.selectedImage = image
-                self.photoPreviewImageView.image = image
-                self.photoPreviewImageView.isHidden = false
-                self.removePhotoButton.isHidden = false
-                self.addPhotoButton.setTitle("+ заменить фото", for: .normal)
+        guard !results.isEmpty else { return }
+
+        let group = DispatchGroup()
+        var newImages: [UIImage] = []
+
+        for result in results {
+            guard result.itemProvider.canLoadObject(ofClass: UIImage.self) else { continue }
+            group.enter()
+            result.itemProvider.loadObject(ofClass: UIImage.self) { object, _ in
+                if let image = object as? UIImage {
+                    newImages.append(image)
+                }
+                group.leave()
             }
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self else { return }
+            let remaining = 5 - self.viewModel.selectedImages.count
+            self.viewModel.selectedImages.append(contentsOf: newImages.prefix(remaining))
+            self.updatePhotoUI()
         }
     }
 }
@@ -477,9 +593,10 @@ extension ReportSightingViewController: PHPickerViewControllerDelegate {
 
 extension ReportSightingViewController: LocationPickerDelegate {
     func didFinishPickingLocation(location: SavedLocation) {
-        currentAddress = location.address.isEmpty ? "Выбранное место" : location.address
-        currentLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
-        locationTitleLabel.text = currentAddress
+        let address = location.address.isEmpty ? "Выбранное место" : location.address
+        viewModel.currentAddress = address
+        viewModel.currentLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        locationTitleLabel.text = address
     }
 }
 
@@ -488,7 +605,7 @@ extension ReportSightingViewController: LocationPickerDelegate {
 extension ReportSightingViewController: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.first else { return }
-        currentLocation = location
+        viewModel.currentLocation = location
         reverseGeocode(location: location)
     }
 

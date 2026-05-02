@@ -4,11 +4,14 @@
 //
 //  Created by Вилина Ольховская on 10.04.2026.
 //
-
 import UIKit
 import UserNotifications
 
 final class SettingsViewController: UIViewController {
+
+    // MARK: - ViewModel
+
+    private let viewModel = SettingsViewModel()
 
     // MARK: - UI
 
@@ -50,33 +53,31 @@ final class SettingsViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
-        checkNotificationStatus()
         notificationsSwitch.addTarget(self, action: #selector(notificationsSwitchChanged), for: .valueChanged)
+        refreshNotificationStatus()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        checkNotificationStatus()
+        refreshNotificationStatus()
     }
 
     // MARK: - Notifications
 
-    private func checkNotificationStatus() {
-        UNUserNotificationCenter.current().getNotificationSettings { [weak self] settings in
-            DispatchQueue.main.async {
-                self?.notificationsSwitch.isOn = settings.authorizationStatus == .authorized
-            }
+    private func refreshNotificationStatus() {
+        Task {
+            await viewModel.checkNotificationStatus()
+            notificationsSwitch.isOn = viewModel.notificationsEnabled
         }
     }
 
     @objc private func notificationsSwitchChanged(_ sender: UISwitch) {
         if sender.isOn {
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [weak self] granted, _ in
-                DispatchQueue.main.async {
-                    sender.isOn = granted
-                    if !granted {
-                        self?.showSettingsAlert()
-                    }
+            Task {
+                let granted = await viewModel.requestNotificationPermission()
+                sender.isOn = granted
+                if !granted {
+                    showSettingsAlert()
                 }
             }
         } else {
@@ -133,7 +134,7 @@ extension SettingsViewController: UITableViewDataSource {
             var content = cell.defaultContentConfiguration()
             content.text = "Разрешить уведомления"
             content.image = UIImage(systemName: "bell.fill")
-            content.imageProperties.tintColor = .systemBlue
+            content.imageProperties.tintColor = .accent
             cell.contentConfiguration = content
             cell.accessoryView = notificationsSwitch
 
@@ -145,7 +146,6 @@ extension SettingsViewController: UITableViewDataSource {
                 content.text = "Версия"
                 content.image = UIImage(systemName: "info.circle")
                 content.imageProperties.tintColor = .systemGray
-                cell.accessoryView = nil
                 cell.selectionStyle = .none
                 let valueLabel = UILabel()
                 valueLabel.text = "\(version) (\(build))"

@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 03.09.2025.
 //
-
 import UIKit
 import Combine
 import CoreLocation
@@ -42,7 +41,7 @@ final class PetListViewController: UIViewController, UISearchResultsUpdating, Lo
     private let fabButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = .systemBlue
+        button.backgroundColor = .accent
         button.tintColor = .white
         button.setImage(UIImage(systemName: "plus"), for: .normal)
         button.imageView?.contentMode = .scaleAspectFit
@@ -62,7 +61,7 @@ final class PetListViewController: UIViewController, UISearchResultsUpdating, Lo
         btn.frame = CGRect(x: 0, y: 0, width: 32, height: 32)
         let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
         btn.setImage(UIImage(systemName: "person.crop.circle", withConfiguration: config), for: .normal)
-        btn.tintColor = .systemBlue
+        btn.tintColor = .accent
         btn.imageView?.contentMode = .scaleAspectFill
         btn.clipsToBounds = true
         btn.layer.cornerRadius = 16
@@ -87,7 +86,7 @@ final class PetListViewController: UIViewController, UISearchResultsUpdating, Lo
     private let bellBadgeLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.backgroundColor = .systemBlue
+        label.backgroundColor = .accent
         label.textColor = .white
         label.font = .systemFont(ofSize: 10, weight: .bold)
         label.textAlignment = .center
@@ -135,14 +134,14 @@ final class PetListViewController: UIViewController, UISearchResultsUpdating, Lo
             let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
             let placeholder = UIImage(systemName: "person.crop.circle", withConfiguration: config)
             profileButton.kf.setImage(with: url, for: .normal, placeholder: placeholder)
-            profileButton.tintColor = .systemBlue
+            profileButton.tintColor = .accent
         } else {
             let config = UIImage.SymbolConfiguration(pointSize: 22, weight: .regular)
             profileButton.setImage(
                 UIImage(systemName: "person.crop.circle", withConfiguration: config),
                 for: .normal
             )
-            profileButton.tintColor = .systemBlue
+            profileButton.tintColor = .accent
         }
     }
     
@@ -454,7 +453,7 @@ extension PetListViewController: UISearchBarDelegate {
 extension PetListViewController: FilterSheetDelegate {
     func filterSheetDidApply(_ filter: PetFilter) {
         activeFilter = filter
-        filterButton.tintColor = filter.isActive ? .systemBlue : .label
+        filterButton.tintColor = filter.isActive ? .accent : .label
         fetchDataForCurrentLocation()
     }
 }

@@ -12,6 +12,7 @@ import Foundation
 protocol NotificationRepositoryProtocol {
     func fetchNotifications() async throws -> [AppNotification]
     func fetchUnreadCount() async throws -> Int
+    func markAsRead(id: String) async throws
     func markAllRead() async throws
 }
 
@@ -38,6 +39,10 @@ final class APIClientNotificationRepository: NotificationRepositoryProtocol {
             "GET", path: "/notifications/unread-count"
         )
         return response.count
+    }
+
+    func markAsRead(id: String) async throws {
+        let _: EmptyResponse = try await api.request("POST", path: "/notifications/\(id)/read")
     }
 
     func markAllRead() async throws {

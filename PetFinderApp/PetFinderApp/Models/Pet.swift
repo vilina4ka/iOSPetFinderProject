@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 26.08.2025.
 //
-
 import Foundation
 
 struct Pet: Identifiable, Codable, Hashable {
@@ -58,11 +57,12 @@ struct Sighting: Codable {
     let petId: String
     let reporterId: String
     let reporterName: String
+    let reporterAvatar: String
     let latitude: Double
     let longitude: Double
     let address: String
     let comment: String
     let imageUrls: [String]
-    var status: String 
+    var status: String
     let createdAt: Date?
 }

@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 14.02.2026.
 //
-
 import Foundation
 
 // MARK: - Protocol

@@ -4,24 +4,15 @@
 //
 //  Created by Вилина Ольховская on 05.04.2026.
 //
-
 import UIKit
-
-// MARK: - Model
-
-struct AppNotification: Decodable {
-    let id: String
-    let type: String        // "sighting", "message"
-    let petId: String?
-    let title: String
-    let body: String
-    let isRead: Bool
-    let createdAt: Date
-}
 
 // MARK: - ViewController
 
 final class NotificationsViewController: UIViewController {
+
+    // MARK: - ViewModel
+
+    private let viewModel = NotificationsViewModel()
 
     // MARK: - UI
 
@@ -50,10 +41,6 @@ final class NotificationsViewController: UIViewController {
         ai.hidesWhenStopped = true
         return ai
     }()
-
-    // MARK: - Data
-
-    private var notifications: [AppNotification] = []
 
     // MARK: - Lifecycle
 
@@ -97,52 +84,30 @@ final class NotificationsViewController: UIViewController {
         ])
     }
 
-    // MARK: - Networking
+    // MARK: - Load
 
     private func loadNotifications() {
         activityIndicator.startAnimating()
         emptyLabel.isHidden = true
 
         Task {
-            do {
-                let items: [AppNotification] = try await APIClient.shared.request(
-                    "GET", path: "/notifications"
-                )
-                await MainActor.run {
-                    self.activityIndicator.stopAnimating()
-                    self.notifications = items
-                    self.tableView.reloadData()
-                    self.emptyLabel.isHidden = !items.isEmpty
-                }
-            } catch {
-                await MainActor.run {
-                    self.activityIndicator.stopAnimating()
-                    self.emptyLabel.isHidden = false
-                    self.emptyLabel.text = "Не удалось загрузить уведомления"
-                }
+            await viewModel.fetchNotifications()
+            self.activityIndicator.stopAnimating()
+            self.tableView.reloadData()
+            if let msg = viewModel.errorMessage {
+                self.emptyLabel.text = msg
+                self.emptyLabel.isHidden = false
+            } else {
+                self.emptyLabel.isHidden = !viewModel.notifications.isEmpty
             }
         }
     }
 
     @objc private func markAllReadTapped() {
         Task {
-            do {
-                let _: EmptyResponse = try await APIClient.shared.request(
-                    "POST", path: "/notifications/read-all"
-                )
-                await MainActor.run {
-                    self.notifications = self.notifications.map { n in
-                        AppNotification(
-                            id: n.id, type: n.type, petId: n.petId,
-                            title: n.title, body: n.body,
-                            isRead: true, createdAt: n.createdAt
-                        )
-                    }
-                    self.tableView.reloadData()
-                    NotificationCenter.default.post(name: .notificationsRead, object: nil)
-                }
-            } catch {
-            }
+            await viewModel.markAllRead()
+            self.tableView.reloadData()
+            NotificationCenter.default.post(name: .notificationsRead, object: nil)
         }
     }
 }
@@ -152,12 +117,12 @@ final class NotificationsViewController: UIViewController {
 extension NotificationsViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        notifications.count
+        viewModel.notifications.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: NotificationCell.reuseID, for: indexPath) as! NotificationCell
-        cell.configure(with: notifications[indexPath.row])
+        cell.configure(with: viewModel.notifications[indexPath.row])
         return cell
     }
 
@@ -167,7 +132,7 @@ extension NotificationsViewController: UITableViewDataSource, UITableViewDelegat
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let notification = notifications[indexPath.row]
+        let notification = viewModel.notifications[indexPath.row]
         handleNotificationTap(notification)
     }
 
@@ -175,11 +140,17 @@ extension NotificationsViewController: UITableViewDataSource, UITableViewDelegat
 
     private func handleNotificationTap(_ notification: AppNotification) {
         if !notification.isRead {
-            markAsRead(notification)
+            Task {
+                await viewModel.markAsRead(id: notification.id)
+                if let index = viewModel.notifications.firstIndex(where: { $0.id == notification.id }) {
+                    tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+                }
+                NotificationCenter.default.post(name: .notificationsRead, object: nil)
+            }
         }
         switch notification.type {
         case "sighting":
-            navigateToSightings(petId: notification.petId)
+            navigateToSighting(petId: notification.petId, sightingId: notification.sightingId)
         case "message":
             navigateToChat(petId: notification.petId)
         case "update":
@@ -189,36 +160,27 @@ extension NotificationsViewController: UITableViewDataSource, UITableViewDelegat
         }
     }
 
-    private func markAsRead(_ notification: AppNotification) {
-        guard let index = notifications.firstIndex(where: { $0.id == notification.id }) else { return }
-        notifications[index] = AppNotification(
-            id: notification.id, type: notification.type, petId: notification.petId,
-            title: notification.title, body: notification.body,
-            isRead: true, createdAt: notification.createdAt
-        )
-        tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
-        NotificationCenter.default.post(name: .notificationsRead, object: nil)
-
-        Task {
-            let _: EmptyResponse? = try? await APIClient.shared.request(
-                "POST", path: "/notifications/\(notification.id)/read"
-            )
-        }
-    }
-
-    private func navigateToSightings(petId: String?) {
+    private func navigateToSighting(petId: String?, sightingId: String?) {
         guard let petId else { return }
         Task {
             do {
                 async let pet: Pet = APIClient.shared.request("GET", path: "/pets/\(petId)")
                 async let sightings: [Sighting] = APIClient.shared.request("GET", path: "/pets/\(petId)/sightings")
                 let (loadedPet, loadedSightings) = try await (pet, sightings)
+
                 await MainActor.run {
-                    let listVC = SightingsListViewController(sightings: loadedSightings, pet: loadedPet)
-                    self.navigationController?.pushViewController(listVC, animated: true)
+                    // Если знаем конкретный sightingId — открываем его сразу
+                    if let sid = sightingId,
+                       let sighting = loadedSightings.first(where: { $0.id == sid }) {
+                        let detailVC = SightingDetailViewController(sighting: sighting, pet: loadedPet, isOwner: true)
+                        self.navigationController?.pushViewController(detailVC, animated: true)
+                    } else {
+                        // Fallback — список всех наблюдений
+                        let listVC = SightingsListViewController(sightings: loadedSightings, pet: loadedPet)
+                        self.navigationController?.pushViewController(listVC, animated: true)
+                    }
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 
@@ -231,8 +193,7 @@ extension NotificationsViewController: UITableViewDataSource, UITableViewDelegat
                     let detailVC = PetDetailViewController(pet: pet)
                     self.navigationController?.pushViewController(detailVC, animated: true)
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 
@@ -253,8 +214,7 @@ extension NotificationsViewController: UITableViewDataSource, UITableViewDelegat
                     chatVC.title = thread.otherUserName.isEmpty ? "Чат" : thread.otherUserName
                     self.navigationController?.pushViewController(chatVC, animated: true)
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 }
@@ -275,7 +235,7 @@ final class NotificationCell: UITableViewCell {
         let iv = UIImageView()
         iv.translatesAutoresizingMaskIntoConstraints = false
         iv.contentMode = .scaleAspectFit
-        iv.tintColor = .systemBlue
+        iv.tintColor = .accent
         iv.widthAnchor.constraint(equalToConstant: 28).isActive = true
         iv.heightAnchor.constraint(equalToConstant: 28).isActive = true
         return iv
@@ -309,7 +269,7 @@ final class NotificationCell: UITableViewCell {
     private let unreadDot: UIView = {
         let dot = UIView()
         dot.translatesAutoresizingMaskIntoConstraints = false
-        dot.backgroundColor = .systemBlue
+        dot.backgroundColor = .accent
         dot.layer.cornerRadius = 5
         dot.widthAnchor.constraint(equalToConstant: 10).isActive = true
         dot.heightAnchor.constraint(equalToConstant: 10).isActive = true
@@ -358,7 +318,7 @@ final class NotificationCell: UITableViewCell {
             iconImageView.tintColor = .systemGreen
         case "message":
             iconImageView.image = UIImage(systemName: "message.fill")
-            iconImageView.tintColor = .systemBlue
+            iconImageView.tintColor = .accent
         default:
             iconImageView.image = UIImage(systemName: "bell.fill")
             iconImageView.tintColor = .systemOrange
@@ -370,7 +330,7 @@ final class NotificationCell: UITableViewCell {
             ? .systemFont(ofSize: 15, weight: .regular)
             : .systemFont(ofSize: 15, weight: .semibold)
         unreadDot.isHidden = notification.isRead
-        backgroundColor = notification.isRead ? .systemBackground : .systemBlue.withAlphaComponent(0.05)
+        backgroundColor = notification.isRead ? .systemBackground : .accent.withAlphaComponent(0.05)
     }
 }
 

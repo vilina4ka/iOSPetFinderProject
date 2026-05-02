@@ -32,8 +32,12 @@
 	</dict>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>yandexmaps</string>
+		<string>tel</string>
 	</array>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Приложение сохраняет постеры розыска в вашу фотогалерею</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Приложение обращается к фотогалерее для сохранения постеров</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

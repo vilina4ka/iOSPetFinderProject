@@ -4,14 +4,13 @@
 //
 //  Created by Вилина Ольховская on 10.04.2026.
 //
-
 import UIKit
 
 final class MyPetsViewController: UIViewController {
 
-    // MARK: - Properties
+    // MARK: - ViewModel
 
-    private var pets: [Pet] = []
+    private let viewModel = MyPetsViewModel()
 
     // MARK: - UI
 
@@ -122,20 +121,14 @@ final class MyPetsViewController: UIViewController {
         emptyView.isHidden = true
 
         Task {
-            do {
-                let result: [Pet] = try await APIClient.shared.request("GET", path: "/me/pets")
-                await MainActor.run {
-                    self.pets = result
-                    self.activityIndicator.stopAnimating()
-                    self.tableView.reloadData()
-                    self.tableView.isHidden = result.isEmpty
-                    self.emptyView.isHidden = !result.isEmpty
-                }
-            } catch {
-                await MainActor.run {
-                    self.activityIndicator.stopAnimating()
-                    self.emptyView.isHidden = false
-                }
+            await viewModel.fetchPets()
+            self.activityIndicator.stopAnimating()
+            self.tableView.reloadData()
+            if viewModel.errorMessage != nil {
+                self.emptyView.isHidden = false
+            } else {
+                self.tableView.isHidden = viewModel.pets.isEmpty
+                self.emptyView.isHidden = !viewModel.pets.isEmpty
             }
         }
     }
@@ -153,14 +146,14 @@ final class MyPetsViewController: UIViewController {
 
 extension MyPetsViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        pets.count
+        viewModel.pets.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(
             withIdentifier: PetTableViewCell.reuseIdentifier, for: indexPath
         ) as! PetTableViewCell
-        cell.configure(with: pets[indexPath.row])
+        cell.configure(with: viewModel.pets[indexPath.row])
         return cell
     }
 }
@@ -174,7 +167,7 @@ extension MyPetsViewController: UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        let pet = pets[indexPath.row]
+        let pet = viewModel.pets[indexPath.row]
         let detailVC = PetDetailViewController(pet: pet)
         navigationController?.pushViewController(detailVC, animated: true)
     }

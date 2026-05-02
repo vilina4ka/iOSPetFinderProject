@@ -4,8 +4,23 @@
 //
 //  Created by Вилина Ольховская on 08.09.2025.
 //
-
 import Foundation
+import UIKit
+
+// MARK: - UIImage helpers
+
+extension UIImage {
+    func resizedForChat(maxSide: CGFloat) -> UIImage {
+        let longestSide = max(size.width, size.height)
+        guard longestSide > maxSide else { return self }
+        let scale = maxSide / longestSide
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+}
 
 var apiJSONDecoder: JSONDecoder = {
     let decoder = JSONDecoder()

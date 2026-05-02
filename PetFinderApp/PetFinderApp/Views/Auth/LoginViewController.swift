@@ -4,31 +4,34 @@
 //
 //  Created by Вилина Ольховская on 27.08.2025.
 //
-
 import UIKit
 
 class LoginViewController: UIViewController {
 
+    // MARK: - ViewModel
+
+    private let viewModel = LoginViewModel()
+
     // MARK: - UI Elements
-    
+
     private let logoImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage(named: "logo_lapki"))
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
-    
+
     private let subtitleLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = "Портал для поиска\nдомашних животных"
+        label.text = "Портал для поиска\nпотерявшихся питомцев"
         label.font = .systemFont(ofSize: 18, weight: .medium)
         label.textColor = .darkGray
         label.textAlignment = .center
         label.numberOfLines = 2
         return label
     }()
-    
+
     private let loginButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -37,35 +40,25 @@ class LoginViewController: UIViewController {
         button.backgroundColor = UIColor(red: 0, green: 149/255, blue: 255/255, alpha: 1.0)
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 28
-        button.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
         return button
     }()
 
-    private let devLoginButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Войти как тест", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 15)
-        button.setTitleColor(.systemGray, for: .normal)
-        button.addTarget(self, action: #selector(devLoginButtonTapped), for: .touchUpInside)
-        return button
-    }()
-    
     // MARK: - Lifecycle
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         setupUI()
     }
-    
+
     // MARK: - UI Setup
-    
+
     private func setupUI() {
         view.addSubview(logoImageView)
         view.addSubview(subtitleLabel)
         view.addSubview(loginButton)
-        view.addSubview(devLoginButton)
+
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
             logoImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -77,52 +70,26 @@ class LoginViewController: UIViewController {
 
             loginButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             loginButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            loginButton.bottomAnchor.constraint(equalTo: devLoginButton.topAnchor, constant: -12),
-            loginButton.heightAnchor.constraint(equalToConstant: 56),
-
-            devLoginButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            devLoginButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
+            loginButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
+            loginButton.heightAnchor.constraint(equalToConstant: 56)
         ])
     }
-    
+
     // MARK: - Actions
-    
-    @objc private func devLoginButtonTapped() {
-        devLoginButton.isEnabled = false
-
-        Task {
-            do {
-                let response: LoginResponse = try await APIClient.shared.request("POST", path: "/auth/dev-login")
-                APIClient.shared.authToken = response.token
-                await AuthManager.shared.fetchCurrentUser()
-
-                if let scene = view.window?.windowScene,
-                   let sceneDelegate = scene.delegate as? SceneDelegate {
-                    sceneDelegate.showMainScreen(on: scene)
-                }
-            } catch {
-                let alert = UIAlertController(title: "Ошибка", message: error.localizedDescription, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "OK", style: .default))
-                self.present(alert, animated: true)
-                self.devLoginButton.isEnabled = true
-            }
-        }
-    }
 
     @objc private func loginButtonTapped() {
         loginButton.isEnabled = false
-        
         Task {
-            do {
-                try await AuthManager.shared.signInWithYandex()
-                if let window = view.window, let sceneDelegate = window.windowScene?.delegate as? SceneDelegate {
+            await viewModel.signInWithYandex()
+            if viewModel.didLogin {
+                if let window = view.window,
+                   let sceneDelegate = window.windowScene?.delegate as? SceneDelegate {
                     sceneDelegate.showMainScreen(on: window.windowScene!)
                 }
-            } catch {
-                let alert = UIAlertController(title: "Ошибка", message: error.localizedDescription, preferredStyle: .alert)
+            } else if let msg = viewModel.errorMessage {
+                let alert = UIAlertController(title: "Ошибка", message: msg, preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default))
                 self.present(alert, animated: true)
-                
                 self.loginButton.isEnabled = true
             }
         }

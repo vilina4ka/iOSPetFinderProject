@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 28.08.2025.
 //
-
 import Foundation
 import UIKit
 
@@ -24,8 +23,8 @@ final class StorageManager {
 
         let imageFileName = UUID().uuidString + ".jpg"
 
-        let uploadedURL = try await APIClient.shared.upload(imageData: imageData, filename: imageFileName)
+        let response = try await APIClient.shared.upload(data: imageData, filename: imageFileName, mimeType: "image/jpeg")
 
-        return uploadedURL
+        return response.url
     }
 }

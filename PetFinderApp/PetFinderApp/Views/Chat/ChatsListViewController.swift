@@ -4,15 +4,14 @@
 //
 //  Created by Вилина Ольховская on 19.03.2026.
 //
-
 import UIKit
 import Kingfisher
 
 final class ChatsListViewController: UIViewController {
 
-    // MARK: - Properties
+    // MARK: - ViewModel
 
-    private var threads: [ChatThread] = []
+    private let viewModel = ChatsListViewModel()
 
     // MARK: - UI
 
@@ -94,23 +93,12 @@ final class ChatsListViewController: UIViewController {
 
     private func loadChats() {
         Task {
-            do {
-                let result: [ChatThread] = try await APIClient.shared.request("GET", path: "/chats")
-                await MainActor.run {
-                    self.threads = result
-                    self.tableView.reloadData()
-                    self.emptyView.isHidden = !result.isEmpty
-                    self.tableView.isHidden = result.isEmpty
-                    self.updateBadge()
-                }
-            } catch {
-            }
+            await viewModel.fetchThreads()
+            self.tableView.reloadData()
+            self.emptyView.isHidden = !viewModel.threads.isEmpty
+            self.tableView.isHidden = viewModel.threads.isEmpty
+            self.tabBarItem.badgeValue = viewModel.totalUnreadCount > 0 ? "\(viewModel.totalUnreadCount)" : nil
         }
-    }
-
-    private func updateBadge() {
-        let total = threads.reduce(0) { $0 + $1.unreadCount }
-        tabBarItem.badgeValue = total > 0 ? "\(total)" : nil
     }
 }
 
@@ -118,12 +106,12 @@ final class ChatsListViewController: UIViewController {
 
 extension ChatsListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        threads.count
+        viewModel.threads.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: ChatThreadCell.reuseID, for: indexPath) as! ChatThreadCell
-        cell.configure(with: threads[indexPath.row])
+        cell.configure(with: viewModel.threads[indexPath.row])
         return cell
     }
 }
@@ -132,7 +120,7 @@ extension ChatsListViewController: UITableViewDataSource {
 
 extension ChatsListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let thread = threads[indexPath.row]
+        let thread = viewModel.threads[indexPath.row]
         Task {
             do {
                 let pet: Pet = try await APIClient.shared.request("GET", path: "/pets/\(thread.petId)")
@@ -140,13 +128,13 @@ extension ChatsListViewController: UITableViewDelegate {
                     let chatVC = ChatViewController(
                         pet: pet,
                         recipientId: thread.otherUserId,
+                        recipientName: thread.otherUserName,
+                        recipientAvatar: thread.otherUserAvatar,
                         sightingId: thread.sightingId
                     )
-                    chatVC.title = thread.otherUserName.isEmpty ? "Чат" : thread.otherUserName
                     self.navigationController?.pushViewController(chatVC, animated: true)
                 }
-            } catch {
-            }
+            } catch {}
         }
     }
 }
@@ -201,7 +189,7 @@ private final class ChatThreadCell: UITableViewCell {
     private let badgeLabel: UILabel = {
         let l = UILabel()
         l.translatesAutoresizingMaskIntoConstraints = false
-        l.backgroundColor = .systemBlue
+        l.backgroundColor = .accent
         l.textColor = .white
         l.font = .systemFont(ofSize: 12, weight: .bold)
         l.textAlignment = .center
@@ -241,6 +229,7 @@ private final class ChatThreadCell: UITableViewCell {
 
             badgeLabel.heightAnchor.constraint(equalToConstant: 20),
             badgeLabel.widthAnchor.constraint(greaterThanOrEqualToConstant: 20),
+            badgeLabel.widthAnchor.constraint(greaterThanOrEqualTo: badgeLabel.heightAnchor),
 
             textStack.leadingAnchor.constraint(equalTo: petImageView.trailingAnchor, constant: 12),
             textStack.trailingAnchor.constraint(equalTo: rightStack.leadingAnchor, constant: -8),
@@ -268,7 +257,7 @@ private final class ChatThreadCell: UITableViewCell {
 
         if thread.unreadCount > 0 {
             badgeLabel.isHidden = false
-            badgeLabel.text = " \(thread.unreadCount) "
+            badgeLabel.text = "\(thread.unreadCount)"
         } else {
             badgeLabel.isHidden = true
             badgeLabel.text = nil

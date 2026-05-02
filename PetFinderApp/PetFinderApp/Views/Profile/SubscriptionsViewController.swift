@@ -4,15 +4,16 @@
 //
 //  Created by Вилина Ольховская on 12.04.2026.
 //
-
 import UIKit
-import Combine
 
 final class SubscriptionsViewController: UIViewController {
 
-    // MARK: - Properties
+    // MARK: - ViewModel
 
-    private var pets: [Pet] = []
+    private let viewModel = SubscriptionsViewModel()
+
+    // MARK: - UI
+
     private var tableView: UITableView!
     private let emptyLabel: UILabel = {
         let label = UILabel()
@@ -34,7 +35,7 @@ final class SubscriptionsViewController: UIViewController {
 
         setupTableView()
         setupEmptyLabel()
-        fetchSubscriptions()
+        loadSubscriptions()
     }
 
     // MARK: - Setup
@@ -62,22 +63,17 @@ final class SubscriptionsViewController: UIViewController {
         emptyLabel.isHidden = true
     }
 
-    // MARK: - Data
+    // MARK: - Load
 
-    private func fetchSubscriptions() {
+    private func loadSubscriptions() {
         Task {
-            do {
-                let result: [Pet] = try await APIClient.shared.request("GET", path: "/subscriptions")
-                await MainActor.run {
-                    self.pets = result
-                    self.tableView.reloadData()
-                    self.emptyLabel.isHidden = !result.isEmpty
-                }
-            } catch {
-                await MainActor.run {
-                    self.emptyLabel.text = "Не удалось загрузить подписки"
-                    self.emptyLabel.isHidden = false
-                }
+            await viewModel.fetchSubscriptions()
+            self.tableView.reloadData()
+            if let msg = viewModel.errorMessage {
+                self.emptyLabel.text = msg
+                self.emptyLabel.isHidden = false
+            } else {
+                self.emptyLabel.isHidden = !viewModel.pets.isEmpty
             }
         }
     }
@@ -88,19 +84,19 @@ final class SubscriptionsViewController: UIViewController {
 extension SubscriptionsViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        pets.count
+        viewModel.pets.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(
             withIdentifier: PetTableViewCell.reuseIdentifier, for: indexPath
         ) as? PetTableViewCell else { return UITableViewCell() }
-        cell.configure(with: pets[indexPath.row])
+        cell.configure(with: viewModel.pets[indexPath.row])
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let detailVC = PetDetailViewController(pet: pets[indexPath.row])
+        let detailVC = PetDetailViewController(pet: viewModel.pets[indexPath.row])
         navigationController?.pushViewController(detailVC, animated: true)
     }
 

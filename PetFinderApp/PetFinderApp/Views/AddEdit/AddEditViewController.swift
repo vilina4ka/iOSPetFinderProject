@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 06.09.2025.
 //
-
 import UIKit
 import Combine
 import YandexMapsMobile
@@ -31,7 +30,7 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         button.titleLabel?.font = .systemFont(ofSize: 20)
         button.backgroundColor = .systemGray5
         button.setTitleColor(.label, for: .normal)
-        button.layer.cornerRadius = 25
+        button.layer.cornerRadius = 16
         return button
     }()
 
@@ -49,7 +48,7 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
     
     private lazy var locationTitleLabel: UILabel = {
         let label = UILabel()
-        label.text = "📍 укажите место"
+        label.setLocationText("укажите место")
         label.font = .systemFont(ofSize: 18, weight: .medium)
         label.isUserInteractionEnabled = true
         return label
@@ -69,7 +68,7 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle(viewModel.isEditing ? "Сохранить" : "Создать", for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
-        button.backgroundColor = .systemBlue
+        button.backgroundColor = .accent
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 16
         return button
@@ -331,7 +330,9 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         for result in results {
             result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] (image, error) in
                 guard let image = image as? UIImage else { return }
-                self?.viewModel.add(newImage: image)
+                Task { @MainActor [weak self] in
+                    self?.viewModel.add(newImage: image)
+                }
             }
         }
     }
@@ -345,10 +346,10 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             guard let location = location else {
-                self.locationTitleLabel.text = "📍 укажите место"
+                self.locationTitleLabel.setLocationText("укажите место")
                 return
             }
-            self.locationTitleLabel.text = "📍 \(location.address)"
+            self.locationTitleLabel.setLocationText(location.address)
             let point = YMKPoint(latitude: location.latitude, longitude: location.longitude)
             self.mapView.mapWindow.map.move(with: YMKCameraPosition(target: point, zoom: 15, azimuth: 0, tilt: 0))
             self.mapView.mapWindow.map.mapObjects.clear()
@@ -457,7 +458,7 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         button.setTitleColor(.label, for: .normal)
         button.setImage(UIImage(systemName: "circle"), for: .normal)
         button.setImage(UIImage(systemName: "circle.inset.filled"), for: .selected)
-        button.tintColor = .systemBlue
+        button.tintColor = .accent
         button.titleLabel?.font = .systemFont(ofSize: 18)
         return button
     }

@@ -4,13 +4,12 @@
 //
 //  Created by Вилина Ольховская on 02.09.2025.
 //
-
 import Foundation
 import CoreLocation
 import Combine
 
 @MainActor
-class PetListViewModel: ObservableObject {
+final class PetListViewModel: ObservableObject {
 
     // MARK: - Published Properties
 
@@ -54,8 +53,12 @@ class PetListViewModel: ObservableObject {
                 breed: breed
             )
 
+            let currentUserID = AuthManager.shared.currentUser?.id
             var seen = Set<String>()
-            self.pets = fetchedPets.filter { seen.insert($0.id).inserted }
+            let unique = fetchedPets.filter { seen.insert($0.id).inserted }
+            let own   = unique.filter { $0.ownerId == currentUserID }
+            let other = unique.filter { $0.ownerId != currentUserID }
+            self.pets = own + other
 
         } catch {
             self.errorMessage = error.localizedDescription

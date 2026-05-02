@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 03.03.2026.
 //
-
 import UIKit
 
 // MARK: - Model
@@ -98,14 +97,19 @@ final class FilterSheetViewController: UIViewController {
     }()
 
     private let breedButton: UIButton = {
-        let b = UIButton(type: .system)
+        var config = UIButton.Configuration.plain()
+        config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 14, bottom: 0, trailing: 40)
+        config.baseForegroundColor = .label
+        config.titleAlignment = .leading
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = .systemFont(ofSize: 16)
+            return outgoing
+        }
+        let b = UIButton(configuration: config)
         b.translatesAutoresizingMaskIntoConstraints = false
-        b.contentHorizontalAlignment = .left
-        b.setTitleColor(.label, for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 16)
         b.backgroundColor = .systemGray6
         b.layer.cornerRadius = 10
-        b.contentEdgeInsets = UIEdgeInsets(top: 0, left: 14, bottom: 0, right: 40)
         return b
     }()
 
@@ -167,7 +171,7 @@ final class FilterSheetViewController: UIViewController {
         b.translatesAutoresizingMaskIntoConstraints = false
         b.setTitle("Применить", for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        b.backgroundColor = .systemBlue
+        b.backgroundColor = .accent
         b.setTitleColor(.white, for: .normal)
         b.layer.cornerRadius = 14
         return b

@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 01.09.2025.
 //
-
 import UIKit
 import YandexMapsMobile
 import CoreLocation
@@ -66,7 +65,7 @@ final class LocationPickerViewController: UIViewController, YMKMapInputListener,
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Показать объявления", for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        button.backgroundColor = .systemBlue
+        button.backgroundColor = .accent
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 10
         return button
@@ -155,23 +154,27 @@ final class LocationPickerViewController: UIViewController, YMKMapInputListener,
             showButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             showButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
             showButton.heightAnchor.constraint(equalToConstant: 50),
-            
+
             radiusStackView.bottomAnchor.constraint(equalTo: showButton.topAnchor, constant: -16),
             radiusStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             radiusStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            
+
             radiusButtonsTitleLabel.bottomAnchor.constraint(equalTo: radiusStackView.topAnchor, constant: -8),
             radiusButtonsTitleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             radiusButtonsTitleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            
+
             searchTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             searchTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             searchTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            
+
             mapView.topAnchor.constraint(equalTo: searchTextField.bottomAnchor, constant: 16),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            mapView.bottomAnchor.constraint(equalTo: radiusButtonsTitleLabel.topAnchor, constant: -16)
+            // В режиме .sighting радиус-элементы скрыты — тянем карту прямо к кнопке
+            mapView.bottomAnchor.constraint(equalTo: mode == .sighting
+                ? showButton.topAnchor
+                : radiusButtonsTitleLabel.topAnchor,
+                constant: -16)
         ])
         
         view.addSubview(zoomInButton)
@@ -216,9 +219,9 @@ final class LocationPickerViewController: UIViewController, YMKMapInputListener,
         if mode == .search {
             let circle = YMKCircle(center: selectedPoint, radius: selectedRadius * 1000)
             self.circle = mapView.mapWindow.map.mapObjects.addCircle(with: circle)
-            self.circle?.strokeColor = .systemBlue
+            self.circle?.strokeColor = .accent
             self.circle?.strokeWidth = 2
-            self.circle?.fillColor = UIColor.systemBlue.withAlphaComponent(0.2)
+            self.circle?.fillColor = UIColor.accent.withAlphaComponent(0.2)
         }
     }
     

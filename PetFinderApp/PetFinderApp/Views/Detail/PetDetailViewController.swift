@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 04.09.2025.
 //
-
 import UIKit
 import YandexMapsMobile
 import Kingfisher
@@ -83,6 +82,16 @@ final class PetDetailViewController: UIViewController {
         return imageView
     }()
 
+    private let ownerNameLabel: UILabel = {
+        let l = UILabel()
+        l.translatesAutoresizingMaskIntoConstraints = false
+        l.font = .systemFont(ofSize: 11)
+        l.textColor = .secondaryLabel
+        l.textAlignment = .center
+        l.numberOfLines = 1
+        return l
+    }()
+
     private let descriptionLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -147,9 +156,9 @@ final class PetDetailViewController: UIViewController {
     private let callButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor(red: 200/255, green: 220/255, blue: 255/255, alpha: 1.0)
+        button.backgroundColor = UIColor.accent.withAlphaComponent(0.15)
         button.setImage(UIImage(systemName: "phone.fill"), for: .normal)
-        button.tintColor = .systemBlue
+        button.tintColor = .accent
         button.layer.cornerRadius = 20
         return button
     }()
@@ -157,9 +166,9 @@ final class PetDetailViewController: UIViewController {
     private let chatButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor(red: 200/255, green: 220/255, blue: 255/255, alpha: 1.0)
+        button.backgroundColor = UIColor.accent.withAlphaComponent(0.15)
         button.setImage(UIImage(systemName: "message.fill"), for: .normal)
-        button.tintColor = .systemBlue
+        button.tintColor = .accent
         button.layer.cornerRadius = 20
         return button
     }()
@@ -167,14 +176,16 @@ final class PetDetailViewController: UIViewController {
     private let reportButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor(red: 200/255, green: 220/255, blue: 255/255, alpha: 1.0)
+        button.backgroundColor = UIColor.accent.withAlphaComponent(0.15)
         button.setImage(UIImage(systemName: "eye.fill"), for: .normal)
-        button.tintColor = .systemBlue
+        button.tintColor = .accent
         button.layer.cornerRadius = 20
         return button
     }()
 
     private var sightings: [Sighting] = []
+    private var ownerAvatarURL: String = ""
+    private var ownerDisplayName: String = ""
 
     private var scrollViewBottomConstraint: NSLayoutConstraint?
 
@@ -204,6 +215,8 @@ final class PetDetailViewController: UIViewController {
         setupUI()
         configureData()
         bindViewModel()
+
+        fetchOwnerProfile()
 
         if !viewModel.isOwner {
             fetchSubscriptionStatus()
@@ -297,11 +310,9 @@ final class PetDetailViewController: UIViewController {
         carouselScrollView.delegate = self
 
         [descriptionLabel, externalSignsLabel, ageLabel, lostDateLabel].forEach(detailsStack.addArrangedSubview)
-        [titleLabel, nameLabel, ownerImageView, detailsStack, locationTitleLabel, mapView].forEach(contentView.addSubview)
+        [titleLabel, nameLabel, ownerImageView, ownerNameLabel, detailsStack, locationTitleLabel, mapView].forEach(contentView.addSubview)
 
-        let mapTapGesture = UITapGestureRecognizer(target: self, action: #selector(mapTapped))
-        mapView.addGestureRecognizer(mapTapGesture)
-        mapView.isUserInteractionEnabled = true
+        addMapOverlayButtons()
 
         let padding: CGFloat = 16
 
@@ -373,6 +384,10 @@ final class PetDetailViewController: UIViewController {
             ownerImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -padding),
             ownerImageView.widthAnchor.constraint(equalToConstant: 50),
             ownerImageView.heightAnchor.constraint(equalToConstant: 50),
+
+            ownerNameLabel.topAnchor.constraint(equalTo: ownerImageView.bottomAnchor, constant: 4),
+            ownerNameLabel.centerXAnchor.constraint(equalTo: ownerImageView.centerXAnchor),
+            ownerNameLabel.widthAnchor.constraint(equalToConstant: 58),
 
             nameLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
             nameLabel.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor),
@@ -447,7 +462,8 @@ final class PetDetailViewController: UIViewController {
     private func configureData() {
         setupCarousel()
 
-        ownerImageView.image = UIImage(systemName: "person.circle")
+        // Load owner avatar (will be refreshed when fetchOwnerProfile completes)
+        loadOwnerAvatar()
 
         titleLabel.text = pet.breed
         nameLabel.text = "Кличка: \(pet.name)"
@@ -458,14 +474,14 @@ final class PetDetailViewController: UIViewController {
 
         if let signs = pet.externalSigns, !signs.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             externalSignsLabel.isHidden = false
-            externalSignsLabel.text = "Внешние признаки: \(signs)"
+            externalSignsLabel.attributedText = boldPrefix("Внешние признаки: ", value: signs)
         } else {
             externalSignsLabel.isHidden = true
         }
 
         if let age = pet.age, age > 0 {
             ageLabel.isHidden = false
-            ageLabel.text = "Возраст: \(ageString(age))"
+            ageLabel.attributedText = boldPrefix("Возраст: ", value: ageString(age))
         } else {
             ageLabel.isHidden = true
         }
@@ -475,12 +491,12 @@ final class PetDetailViewController: UIViewController {
             formatter.dateFormat = "d MMMM yyyy"
             formatter.locale = Locale(identifier: "ru_RU")
             lostDateLabel.isHidden = false
-            lostDateLabel.text = "Пропал: \(formatter.string(from: lostDate))"
+            lostDateLabel.attributedText = boldPrefix("Пропал: ", value: formatter.string(from: lostDate))
         } else {
             lostDateLabel.isHidden = true
         }
 
-        locationTitleLabel.text = "📍 \(pet.location)"
+        locationTitleLabel.setLocationText(pet.location)
 
         updateMapMarkers()
     }
@@ -508,8 +524,9 @@ final class PetDetailViewController: UIViewController {
         }
     }
 
-    private func updateMapMarkers() {
-        guard let map = mapView.mapWindow?.map else { return }
+    // MARK: - Map helpers (shared between embedded and full-screen)
+
+    private func setupMarkersOnMap(_ map: YMKMap) {
         map.mapObjects.clear()
 
         if let lat = pet.latitude, let lon = pet.longitude {
@@ -540,16 +557,15 @@ final class PetDetailViewController: UIViewController {
             if isConfirmed, let lat = pet.latitude, let lon = pet.longitude {
                 let petPoint = YMKPoint(latitude: lat, longitude: lon)
                 let polyline = map.mapObjects.addPolyline(with: YMKPolyline(points: [petPoint, point]))
-                polyline.strokeWidth = 2.5
-                polyline.dashLength = 8
+                polyline.setStrokeColorWith(UIColor.systemBlue)
+                polyline.strokeWidth = 3
+                polyline.dashLength = 10
                 polyline.gapLength = 6
             }
         }
     }
 
-    private func updateMapCamera() {
-        guard let map = mapView.mapWindow?.map else { return }
-
+    private func setupCameraOnMap(_ map: YMKMap) {
         var points: [YMKPoint] = []
         if let lat = pet.latitude, let lon = pet.longitude {
             points.append(YMKPoint(latitude: lat, longitude: lon))
@@ -573,6 +589,69 @@ final class PetDetailViewController: UIViewController {
         } else if let first = points.first {
             map.move(with: YMKCameraPosition(target: first, zoom: 14, azimuth: 0, tilt: 0))
         }
+    }
+
+    private func updateMapMarkers() {
+        guard let map = mapView.mapWindow?.map else { return }
+        setupMarkersOnMap(map)
+    }
+
+    private func updateMapCamera() {
+        guard let map = mapView.mapWindow?.map else { return }
+        setupCameraOnMap(map)
+    }
+
+    // MARK: - Map overlay buttons
+
+    private func addMapOverlayButtons() {
+        let expandBtn  = makeSmallMapBtn(icon: "arrow.up.left.and.arrow.down.right")
+        let zoomInBtn  = makeSmallMapBtn(icon: "plus")
+        let zoomOutBtn = makeSmallMapBtn(icon: "minus")
+        let mapsBtn    = makeSmallMapBtn(icon: "arrow.triangle.turn.up.right.circle.fill")
+
+        expandBtn.addTarget (self, action: #selector(expandMapTapped),  for: .touchUpInside)
+        zoomInBtn.addTarget (self, action: #selector(mapZoomInTapped),  for: .touchUpInside)
+        zoomOutBtn.addTarget(self, action: #selector(mapZoomOutTapped), for: .touchUpInside)
+        mapsBtn.addTarget   (self, action: #selector(openInMapsTapped), for: .touchUpInside)
+
+        [expandBtn, zoomInBtn, zoomOutBtn, mapsBtn].forEach { mapView.addSubview($0) }
+
+        let s: CGFloat = 34
+        NSLayoutConstraint.activate([
+            expandBtn.topAnchor.constraint(equalTo: mapView.topAnchor, constant: 8),
+            expandBtn.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -8),
+            expandBtn.widthAnchor.constraint(equalToConstant: s),
+            expandBtn.heightAnchor.constraint(equalToConstant: s),
+
+            zoomInBtn.centerYAnchor.constraint(equalTo: mapView.centerYAnchor, constant: -20),
+            zoomInBtn.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -8),
+            zoomInBtn.widthAnchor.constraint(equalToConstant: s),
+            zoomInBtn.heightAnchor.constraint(equalToConstant: s),
+
+            zoomOutBtn.topAnchor.constraint(equalTo: zoomInBtn.bottomAnchor, constant: 4),
+            zoomOutBtn.trailingAnchor.constraint(equalTo: zoomInBtn.trailingAnchor),
+            zoomOutBtn.widthAnchor.constraint(equalToConstant: s),
+            zoomOutBtn.heightAnchor.constraint(equalToConstant: s),
+
+            mapsBtn.topAnchor.constraint(equalTo: mapView.topAnchor, constant: 8),
+            mapsBtn.leadingAnchor.constraint(equalTo: mapView.leadingAnchor, constant: 8),
+            mapsBtn.widthAnchor.constraint(equalToConstant: s),
+            mapsBtn.heightAnchor.constraint(equalToConstant: s),
+        ])
+    }
+
+    private func makeSmallMapBtn(icon: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.setImage(UIImage(systemName: icon), for: .normal)
+        btn.tintColor = .label
+        btn.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9)
+        btn.layer.cornerRadius = 8
+        btn.layer.shadowColor   = UIColor.black.cgColor
+        btn.layer.shadowOpacity = 0.15
+        btn.layer.shadowOffset  = CGSize(width: 0, height: 1)
+        btn.layer.shadowRadius  = 3
+        return btn
     }
 
     private func makePinImage(systemName: String, color: UIColor, size: CGFloat) -> UIImage? {
@@ -638,7 +717,7 @@ final class PetDetailViewController: UIViewController {
                     body: StatusUpdate(status: "found")
                 )
                 await MainActor.run {
-                    self.navigationController?.popViewController(animated: true)
+                    _ = self.navigationController?.popViewController(animated: true)
                 }
             } catch {
                 await MainActor.run {
@@ -669,7 +748,7 @@ final class PetDetailViewController: UIViewController {
                     path: "/pets/\(pet.id)"
                 )
                 await MainActor.run {
-                    self.navigationController?.popViewController(animated: true)
+                    _ = self.navigationController?.popViewController(animated: true)
                 }
             } catch {
                 await MainActor.run {
@@ -685,32 +764,73 @@ final class PetDetailViewController: UIViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    @objc private func mapTapped() {
+    @objc private func expandMapTapped() {
+        let coord: (lat: Double, lon: Double)? = pet.latitude.flatMap { lat in
+            pet.longitude.map { lon in (lat, lon) }
+        }
+        let fs = FullScreenMapViewController(coordinate: coord) { [weak self] mapView in
+            guard let self, let map = mapView.mapWindow?.map else { return }
+            self.setupMarkersOnMap(map)
+            self.setupCameraOnMap(map)
+        }
+        present(fs, animated: true)
+    }
+
+    @objc private func mapZoomInTapped() {
+        guard let map = mapView.mapWindow?.map else { return }
+        let p = map.cameraPosition
+        map.move(
+            with: YMKCameraPosition(target: p.target, zoom: p.zoom + 1, azimuth: p.azimuth, tilt: p.tilt),
+            animation: YMKAnimation(type: .smooth, duration: 0.25), cameraCallback: nil
+        )
+    }
+
+    @objc private func mapZoomOutTapped() {
+        guard let map = mapView.mapWindow?.map else { return }
+        let p = map.cameraPosition
+        map.move(
+            with: YMKCameraPosition(target: p.target, zoom: p.zoom - 1, azimuth: p.azimuth, tilt: p.tilt),
+            animation: YMKAnimation(type: .smooth, duration: 0.25), cameraCallback: nil
+        )
+    }
+
+    @objc private func openInMapsTapped() {
         guard let lat = pet.latitude, let lon = pet.longitude else {
             showErrorAlert(message: "Координаты не указаны.")
             return
         }
-
-        guard let yandexMapsURL = URL(string: "yandexmaps://maps.yandex.ru/?pt=\(lon),\(lat)&z=15") else { return }
-        guard let yandexMapsWebURL = URL(string: "https://yandex.ru/maps/?pt=\(lon),\(lat)&z=15") else { return }
-
-        if UIApplication.shared.canOpenURL(yandexMapsURL) {
-            UIApplication.shared.open(yandexMapsURL)
-        } else {
-            UIApplication.shared.open(yandexMapsWebURL)
-        }
+        FullScreenMapViewController.openInYandexMaps(lat: lat, lon: lon)
     }
 
     @objc private func shareButtonTapped() {
-        if viewModel.isOwner {
-            showPosterFormatPicker()
-        } else {
-            var itemsToShare: [Any] = [viewModel.shareText]
-            if let imageURL = viewModel.shareImageURL {
-                itemsToShare.append(imageURL)
-            }
-            let activityVC = UIActivityViewController(activityItems: itemsToShare, applicationActivities: nil)
-            present(activityVC, animated: true)
+        let petURL = "https://lapki.app/pets/\(pet.id)"
+
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+
+        // Poster — available to everyone
+        sheet.addAction(UIAlertAction(title: "Создать постер", style: .default) { [weak self] _ in
+            self?.showPosterFormatPicker()
+        })
+
+        // Copy link
+        sheet.addAction(UIAlertAction(title: "Скопировать ссылку", style: .default) { [weak self] _ in
+            UIPasteboard.general.string = petURL
+            self?.showToast("Ссылка скопирована")
+        })
+
+        sheet.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+
+        if let popover = sheet.popoverPresentationController {
+            popover.barButtonItem = navigationItem.rightBarButtonItems?.last
+        }
+        present(sheet, animated: true)
+    }
+
+    private func showToast(_ message: String) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        present(alert, animated: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak alert] in
+            alert?.dismiss(animated: true)
         }
     }
 
@@ -731,14 +851,159 @@ final class PetDetailViewController: UIViewController {
     }
 
     private func generateAndSharePoster(format: PosterFormat) {
-        let firstPhoto: UIImage? = (carouselScrollView.subviews.first as? UIImageView)?.image
+        // Use the currently-visible carousel slide
+        let currentPage = Int(carouselScrollView.contentOffset.x / max(1, carouselScrollView.bounds.width))
+        let firstPhoto  = carouselImageViews.indices.contains(currentPage)
+            ? carouselImageViews[currentPage].image
+            : carouselImageViews.first?.image
 
-        let poster = PetPosterGenerator.generate(pet: pet, photo: firstPhoto, format: format)
-        let activityVC = UIActivityViewController(activityItems: [poster], applicationActivities: nil)
-        if let popover = activityVC.popoverPresentationController {
-            popover.barButtonItem = navigationItem.rightBarButtonItems?.last
+        // Capture values before entering Task
+        let petSnapshot = pet
+
+        Task {
+            let city = await PetDetailViewController.resolveCity(for: petSnapshot)
+
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                let poster = PetPosterGenerator.generate(pet: petSnapshot, photo: firstPhoto,
+                                                        city: city, format: format)
+                let activityVC = UIActivityViewController(activityItems: [poster],
+                                                         applicationActivities: nil)
+                if let popover = activityVC.popoverPresentationController {
+                    popover.barButtonItem = self.navigationItem.rightBarButtonItems?.last
+                }
+                self.present(activityVC, animated: true)
+            }
         }
-        present(activityVC, animated: true)
+    }
+
+    // MARK: - City resolution via Yandex MapKit SDK
+
+    private static func resolveCity(for pet: Pet) async -> String? {
+        guard let lat = pet.latitude, let lon = pet.longitude, lat != 0, lon != 0 else { return nil }
+        return await ymkReverseGeocode(lat: lat, lon: lon)
+    }
+
+    /// Reverse-geocodes coordinates using the Yandex MapsMobile SDK (same key, no extra network call).
+    private static func ymkReverseGeocode(lat: Double, lon: Double) async -> String? {
+        // YMKSearch must be used on the main thread
+        await withCheckedContinuation { continuation in
+            DispatchQueue.main.async {
+                // Keep both manager and session alive until the callback fires
+                final class Box {
+                    var manager: YMKSearchManager?
+                    var session: YMKSearchSession?
+                }
+                let box = Box()
+                box.manager = YMKSearchFactory.instance().createSearchManager(with: .combined)
+                let point = YMKPoint(latitude: lat, longitude: lon)
+
+                box.session = box.manager?.submit(
+                    with: point,
+                    zoom: nil,
+                    searchOptions: YMKSearchOptions()
+                ) { response, _ in
+                    _ = box   // retain until callback
+                    guard let response else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+                    continuation.resume(returning: Self.parseCity(from: response))
+                }
+            }
+        }
+    }
+
+    /// Extracts city name from a YMKSearchResponse.
+    /// Prefers "locality" (regular city); falls back to "province" (federal cities: Москва, СПб).
+    private static func parseCity(from response: YMKSearchResponse) -> String? {
+        for child in response.collection.children {
+            guard
+                let obj  = child.obj,
+                let meta = obj.metadataContainer.getItemOf(YMKSearchToponymObjectMetadata.self)
+                            as? YMKSearchToponymObjectMetadata
+            else { continue }
+
+            let components = meta.address.components
+            let localityKind = NSNumber(value: YMKSearchComponentKind.locality.rawValue)
+            let provinceKind = NSNumber(value: YMKSearchComponentKind.province.rawValue)
+
+            if let city = components.first(where: { $0.kinds.contains(localityKind) })?.name
+                        ?? components.first(where: { $0.kinds.contains(provinceKind) })?.name {
+                return city
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Owner Profile
+
+    private func fetchOwnerProfile() {
+        if viewModel.isOwner {
+            // Current user is the owner — use their cached profile
+            if let me = AuthManager.shared.currentUser {
+                ownerDisplayName = me.name
+                ownerAvatarURL   = me.avatarURL ?? ""
+            }
+            loadOwnerAvatar()
+            return
+        }
+
+        guard let ownerId = pet.ownerId else { return }
+
+        Task {
+            do {
+                struct PublicUser: Decodable {
+                    let id: String
+                    let name: String
+                    let avatarUrl: String
+                }
+                let user: PublicUser = try await APIClient.shared.request("GET", path: "/users/\(ownerId)")
+                await MainActor.run {
+                    self.ownerDisplayName = user.name
+                    self.ownerAvatarURL   = user.avatarUrl
+                    self.loadOwnerAvatar()
+                }
+            } catch {
+                // Leave placeholder on failure
+            }
+        }
+    }
+
+    private func loadOwnerAvatar() {
+        ownerNameLabel.text = ownerDisplayName.components(separatedBy: " ").first ?? ownerDisplayName
+
+        if !ownerAvatarURL.isEmpty, let url = URL(string: ownerAvatarURL) {
+            ownerImageView.kf.setImage(with: url, placeholder: UIImage(systemName: "person.circle"))
+        } else if !ownerDisplayName.isEmpty {
+            ownerImageView.image = makeInitialAvatar(name: ownerDisplayName)
+        } else {
+            ownerImageView.image = UIImage(systemName: "person.circle")
+            ownerImageView.tintColor = .systemGray3
+        }
+    }
+
+    private func makeInitialAvatar(name: String) -> UIImage {
+        let initial = String(name.prefix(1)).uppercased()
+        let size = CGSize(width: 50, height: 50)
+        let renderer = UIGraphicsImageRenderer(size: size)
+        return renderer.image { _ in
+            UIColor.accent.withAlphaComponent(0.18).setFill()
+            UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).fill()
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 20, weight: .semibold),
+                .foregroundColor: UIColor.accent
+            ]
+            let str = initial as NSString
+            let strSize = str.size(withAttributes: attrs)
+            let rect = CGRect(
+                x: (size.width - strSize.width) / 2,
+                y: (size.height - strSize.height) / 2,
+                width: strSize.width,
+                height: strSize.height
+            )
+            str.draw(in: rect, withAttributes: attrs)
+        }
     }
 
     // MARK: - Subscription
@@ -804,12 +1069,23 @@ final class PetDetailViewController: UIViewController {
             showErrorAlert(message: "Номер телефона не указан")
             return
         }
-
-        let cleanedPhone = phoneNumber.filter { $0.isNumber }
-        guard let phoneURL = URL(string: "tel://\(cleanedPhone)") else { return }
+        let cleaned = phoneNumber.filter { $0.isNumber || $0 == "+" }
+        guard let phoneURL = URL(string: "tel:\(cleaned)") else { return }
 
         if UIApplication.shared.canOpenURL(phoneURL) {
             UIApplication.shared.open(phoneURL)
+        } else {
+            // Симулятор / iPad / устройство без SIM — показываем номер с копированием
+            let alert = UIAlertController(
+                title: "Контактный номер",
+                message: phoneNumber,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "Скопировать", style: .default) { _ in
+                UIPasteboard.general.string = phoneNumber
+            })
+            alert.addAction(UIAlertAction(title: "Закрыть", style: .cancel))
+            present(alert, animated: true)
         }
     }
 
@@ -824,7 +1100,12 @@ final class PetDetailViewController: UIViewController {
             return
         }
 
-        let chatVC = ChatViewController(pet: pet, recipientId: ownerId)
+        let chatVC = ChatViewController(
+            pet: pet,
+            recipientId: ownerId,
+            recipientName: ownerDisplayName,
+            recipientAvatar: ownerAvatarURL
+        )
         navigationController?.pushViewController(chatVC, animated: true)
     }
 
@@ -835,7 +1116,7 @@ final class PetDetailViewController: UIViewController {
         config.title = "Наблюдения"
         config.image = UIImage(systemName: "eye.fill")
         config.imagePadding = 8
-        config.baseBackgroundColor = .systemBlue
+        config.baseBackgroundColor = .accent
         config.cornerStyle = .large
         let btn = UIButton(configuration: config)
         btn.translatesAutoresizingMaskIntoConstraints = false
@@ -870,6 +1151,20 @@ final class PetDetailViewController: UIViewController {
 }
 
 // MARK: - Helpers
+
+private func boldPrefix(_ prefix: String, value: String) -> NSAttributedString {
+    let result = NSMutableAttributedString(
+        string: prefix,
+        attributes: [.font: UIFont.systemFont(ofSize: 17, weight: .semibold),
+                     .foregroundColor: UIColor.darkGray]
+    )
+    result.append(NSAttributedString(
+        string: value,
+        attributes: [.font: UIFont.systemFont(ofSize: 17),
+                     .foregroundColor: UIColor.darkGray]
+    ))
+    return result
+}
 
 private func ageString(_ age: Int) -> String {
     let mod100 = age % 100

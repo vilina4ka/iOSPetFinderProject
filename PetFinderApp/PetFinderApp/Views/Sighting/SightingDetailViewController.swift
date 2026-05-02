@@ -4,7 +4,6 @@
 //
 //  Created by Вилина Ольховская on 28.03.2026.
 //
-
 import UIKit
 import YandexMapsMobile
 import Kingfisher
@@ -72,10 +71,13 @@ final class SightingDetailViewController: UIViewController {
         mv.translatesAutoresizingMaskIntoConstraints = false
         mv.layer.cornerRadius = 16
         mv.clipsToBounds = true
+        mv.mapWindow.map.isZoomGesturesEnabled   = false
+        mv.mapWindow.map.isScrollGesturesEnabled = false
+        mv.mapWindow.map.isRotateGesturesEnabled = false
         return mv
     }()
 
-    private lazy var chatButton: UIButton = makeActionButton(icon: "message.fill", color: .systemBlue)
+    private lazy var chatButton: UIButton = makeActionButton(icon: "message.fill", color: .accent)
     private lazy var confirmButton: UIButton = makeActionButton(icon: "checkmark.circle.fill", color: .systemGreen)
     private lazy var rejectButton: UIButton = makeActionButton(icon: "xmark.circle.fill", color: .systemRed)
 
@@ -158,6 +160,8 @@ final class SightingDetailViewController: UIViewController {
         chatButton.addTarget(self, action: #selector(chatTapped), for: .touchUpInside)
         confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
         rejectButton.addTarget(self, action: #selector(rejectTapped), for: .touchUpInside)
+
+        addMapOverlayButtons()
     }
 
     private func configure() {
@@ -176,7 +180,7 @@ final class SightingDetailViewController: UIViewController {
 
         let dateStr = sighting.createdAt.map { formatDate($0) } ?? ""
         reporterLabel.text = "Нашёл: \(sighting.reporterName.isEmpty ? "Аноним" : sighting.reporterName) · \(dateStr)"
-        addressLabel.text = "📍 \(sighting.address)"
+        addressLabel.setLocationText(sighting.address)
         commentLabel.text = sighting.comment.isEmpty ? nil : sighting.comment
         commentLabel.isHidden = sighting.comment.isEmpty
 
@@ -187,8 +191,9 @@ final class SightingDetailViewController: UIViewController {
         }
     }
 
-    private func updateMapMarkers() {
-        let map = mapView.mapWindow.map
+    // MARK: - Map helpers (shared between embedded and full-screen)
+
+    private func setupMarkersOnMap(_ map: YMKMap) {
         map.mapObjects.clear()
 
         let sightingPoint = YMKPoint(latitude: sighting.latitude, longitude: sighting.longitude)
@@ -208,17 +213,17 @@ final class SightingDetailViewController: UIViewController {
             petMark.geometry = petPoint
             petMark.setIconWith(
                 UIImage(systemName: "pawprint.circle.fill")?
-                    .withTintColor(.systemBlue, renderingMode: .alwaysOriginal) ?? UIImage()
+                    .withTintColor(.accent, renderingMode: .alwaysOriginal) ?? UIImage()
             )
             let polyline = map.mapObjects.addPolyline(with: YMKPolyline(points: [petPoint, sightingPoint]))
-            polyline.strokeWidth = 2.5
-            polyline.dashLength = 8
-            polyline.gapLength = 6
+            let style = polyline.style
+            style.strokeWidth = 2.5
+            style.dashLength = 8
+            style.gapLength = 6
         }
     }
 
-    private func updateMapCamera() {
-        let map = mapView.mapWindow.map
+    private func setupCameraOnMap(_ map: YMKMap) {
         let sightingPoint = YMKPoint(latitude: sighting.latitude, longitude: sighting.longitude)
 
         if sighting.status == "confirmed", let lat = pet.latitude, let lon = pet.longitude {
@@ -237,9 +242,65 @@ final class SightingDetailViewController: UIViewController {
         }
     }
 
+    private func updateMapMarkers() { setupMarkersOnMap(mapView.mapWindow.map) }
+    private func updateMapCamera()  { setupCameraOnMap(mapView.mapWindow.map) }
+
     private func updateMap() {
         updateMapMarkers()
         updateMapCamera()
+    }
+
+    // MARK: - Map overlay buttons
+
+    private func addMapOverlayButtons() {
+        let expandBtn  = makeSmallMapBtn(icon: "arrow.up.left.and.arrow.down.right")
+        let zoomInBtn  = makeSmallMapBtn(icon: "plus")
+        let zoomOutBtn = makeSmallMapBtn(icon: "minus")
+        let mapsBtn    = makeSmallMapBtn(icon: "arrow.triangle.turn.up.right.circle.fill")
+
+        expandBtn.addTarget (self, action: #selector(expandMapTapped),  for: .touchUpInside)
+        zoomInBtn.addTarget (self, action: #selector(mapZoomInTapped),  for: .touchUpInside)
+        zoomOutBtn.addTarget(self, action: #selector(mapZoomOutTapped), for: .touchUpInside)
+        mapsBtn.addTarget   (self, action: #selector(openInMapsTapped), for: .touchUpInside)
+
+        [expandBtn, zoomInBtn, zoomOutBtn, mapsBtn].forEach { mapView.addSubview($0) }
+
+        let s: CGFloat = 34
+        NSLayoutConstraint.activate([
+            expandBtn.topAnchor.constraint(equalTo: mapView.topAnchor, constant: 8),
+            expandBtn.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -8),
+            expandBtn.widthAnchor.constraint(equalToConstant: s),
+            expandBtn.heightAnchor.constraint(equalToConstant: s),
+
+            zoomInBtn.centerYAnchor.constraint(equalTo: mapView.centerYAnchor, constant: -20),
+            zoomInBtn.trailingAnchor.constraint(equalTo: mapView.trailingAnchor, constant: -8),
+            zoomInBtn.widthAnchor.constraint(equalToConstant: s),
+            zoomInBtn.heightAnchor.constraint(equalToConstant: s),
+
+            zoomOutBtn.topAnchor.constraint(equalTo: zoomInBtn.bottomAnchor, constant: 4),
+            zoomOutBtn.trailingAnchor.constraint(equalTo: zoomInBtn.trailingAnchor),
+            zoomOutBtn.widthAnchor.constraint(equalToConstant: s),
+            zoomOutBtn.heightAnchor.constraint(equalToConstant: s),
+
+            mapsBtn.bottomAnchor.constraint(equalTo: mapView.bottomAnchor, constant: -8),
+            mapsBtn.leadingAnchor.constraint(equalTo: mapView.leadingAnchor, constant: 8),
+            mapsBtn.widthAnchor.constraint(equalToConstant: s),
+            mapsBtn.heightAnchor.constraint(equalToConstant: s),
+        ])
+    }
+
+    private func makeSmallMapBtn(icon: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.setImage(UIImage(systemName: icon), for: .normal)
+        btn.tintColor = .label
+        btn.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.9)
+        btn.layer.cornerRadius = 8
+        btn.layer.shadowColor   = UIColor.black.cgColor
+        btn.layer.shadowOpacity = 0.15
+        btn.layer.shadowOffset  = CGSize(width: 0, height: 1)
+        btn.layer.shadowRadius  = 3
+        return btn
     }
 
     private func updateButtonStates() {
@@ -273,10 +334,50 @@ final class SightingDetailViewController: UIViewController {
         return btn
     }
 
+    // MARK: - Map overlay actions
+
+    @objc private func expandMapTapped() {
+        let coord = (lat: sighting.latitude, lon: sighting.longitude)
+        let fs = FullScreenMapViewController(coordinate: coord) { [weak self] mapView in
+            guard let self, let map = mapView.mapWindow?.map else { return }
+            self.setupMarkersOnMap(map)
+            self.setupCameraOnMap(map)
+        }
+        present(fs, animated: true)
+    }
+
+    @objc private func mapZoomInTapped() {
+        let map = mapView.mapWindow.map
+        let p = map.cameraPosition
+        map.move(
+            with: YMKCameraPosition(target: p.target, zoom: p.zoom + 1, azimuth: p.azimuth, tilt: p.tilt),
+            animation: YMKAnimation(type: .smooth, duration: 0.25), cameraCallback: nil
+        )
+    }
+
+    @objc private func mapZoomOutTapped() {
+        let map = mapView.mapWindow.map
+        let p = map.cameraPosition
+        map.move(
+            with: YMKCameraPosition(target: p.target, zoom: p.zoom - 1, azimuth: p.azimuth, tilt: p.tilt),
+            animation: YMKAnimation(type: .smooth, duration: 0.25), cameraCallback: nil
+        )
+    }
+
+    @objc private func openInMapsTapped() {
+        FullScreenMapViewController.openInYandexMaps(lat: sighting.latitude, lon: sighting.longitude)
+    }
+
     // MARK: - Actions
 
     @objc private func chatTapped() {
-        let chatVC = ChatViewController(pet: pet, recipientId: sighting.reporterId, sightingId: sighting.id)
+        let chatVC = ChatViewController(
+            pet: pet,
+            recipientId: sighting.reporterId,
+            recipientName: sighting.reporterName.isEmpty ? "Аноним" : sighting.reporterName,
+            recipientAvatar: sighting.reporterAvatar,
+            sightingId: sighting.id
+        )
         navigationController?.pushViewController(chatVC, animated: true)
     }
 
