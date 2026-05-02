@@ -104,7 +104,7 @@ func (r *PostgresChatRepo) GetMessages(ctx context.Context, petID, userID, other
 	}
 	defer rows.Close()
 
-	var messages []model.Message
+	messages := make([]model.Message, 0)
 	for rows.Next() {
 		var m model.Message
 		if err := rows.Scan(&m.ID, &m.PetID, &m.SightingID, &m.SenderID, &m.RecipientID, &m.Text, &m.IsRead, &m.CreatedAt, &m.ImageURL, &m.FileName); err != nil {

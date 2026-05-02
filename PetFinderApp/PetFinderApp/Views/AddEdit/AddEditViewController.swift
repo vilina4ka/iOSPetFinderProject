@@ -495,6 +495,7 @@ class AddEditViewController: UIViewController, UIPickerViewDelegate, UIPickerVie
         tv.textContainerInset = UIEdgeInsets(top: 10, left: 8, bottom: 10, right: 8)
         tv.isScrollEnabled = false
         tv.heightAnchor.constraint(greaterThanOrEqualToConstant: 90).isActive = true
+        tv.inputAccessoryView = createToolbar()
         return tv
     }
 

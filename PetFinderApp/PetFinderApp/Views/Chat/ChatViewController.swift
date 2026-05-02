@@ -18,6 +18,7 @@ final class ChatViewController: UIViewController {
     private var cancellables = Set<AnyCancellable>()
     private var editingMessageId: String?
     private var editBannerHeightConstraint: NSLayoutConstraint!
+    private var inputContainerBottomConstraint: NSLayoutConstraint!
 
     // MARK: - UI
 
@@ -211,7 +212,10 @@ final class ChatViewController: UIViewController {
 
             inputContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             inputContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            inputContainer.bottomAnchor.constraint(equalTo: safe.bottomAnchor),
+        ])
+        inputContainerBottomConstraint = inputContainer.bottomAnchor.constraint(equalTo: safe.bottomAnchor)
+        inputContainerBottomConstraint.isActive = true
+        NSLayoutConstraint.activate([
 
             // Edit banner — height 0 when hidden, 28 when active
             editBanner.topAnchor.constraint(equalTo: inputContainer.topAnchor),
@@ -359,7 +363,11 @@ final class ChatViewController: UIViewController {
               let duration = notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double
         else { return }
         let keyboardHeight = max(0, view.bounds.height - frame.origin.y)
+        let safeBottom = view.safeAreaInsets.bottom
+        let offset = keyboardHeight > 0 ? -(keyboardHeight - safeBottom) : 0
+        inputContainerBottomConstraint.constant = offset
         UIView.animate(withDuration: duration) {
+            self.view.layoutIfNeeded()
             self.tableView.contentInset.bottom = keyboardHeight
             self.tableView.verticalScrollIndicatorInsets.bottom = keyboardHeight
         }
