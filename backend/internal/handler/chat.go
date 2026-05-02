@@ -175,6 +175,8 @@ func (h *ChatHandler) MarkMessagesRead(c *gin.Context) {
 		return
 	}
 
+	_ = h.notif.MarkReadByPetAndType(c.Request.Context(), userID, petID, "message")
+
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 

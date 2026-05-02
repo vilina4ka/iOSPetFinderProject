@@ -49,6 +49,27 @@ func (h *NotificationsHandler) UnreadCount(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"count": count})
 }
 
+func (h *NotificationsHandler) MarkRead(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+		return
+	}
+
+	notifID := c.Param("id")
+	if notifID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID уведомления обязателен"})
+		return
+	}
+
+	if err := h.notif.MarkRead(c.Request.Context(), userID, notifID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сервера"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
 func (h *NotificationsHandler) MarkAllRead(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {

@@ -12,6 +12,8 @@ type NotificationRepo interface {
 	Create(ctx context.Context, userID, notifType, petID, title, body string) error
 	ListByUser(ctx context.Context, userID string) ([]model.Notification, error)
 	UnreadCount(ctx context.Context, userID string) (int, error)
+	MarkRead(ctx context.Context, userID, notifID string) error
+	MarkReadByPetAndType(ctx context.Context, userID, petID, notifType string) error
 	MarkAllRead(ctx context.Context, userID string) error
 }
 
@@ -67,6 +69,28 @@ func (r *PostgresNotificationRepo) UnreadCount(ctx context.Context, userID strin
 		return 0, fmt.Errorf("notifications unread count: %w", err)
 	}
 	return count, nil
+}
+
+func (r *PostgresNotificationRepo) MarkRead(ctx context.Context, userID, notifID string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2`,
+		notifID, userID,
+	)
+	if err != nil {
+		return fmt.Errorf("notifications mark read: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresNotificationRepo) MarkReadByPetAndType(ctx context.Context, userID, petID, notifType string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE notifications SET is_read = TRUE WHERE user_id = $1 AND pet_id = $2 AND type = $3 AND is_read = FALSE`,
+		userID, petID, notifType,
+	)
+	if err != nil {
+		return fmt.Errorf("notifications mark read by pet: %w", err)
+	}
+	return nil
 }
 
 func (r *PostgresNotificationRepo) MarkAllRead(ctx context.Context, userID string) error {

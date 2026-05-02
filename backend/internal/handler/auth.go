@@ -178,7 +178,7 @@ func (h *AuthHandler) upsertUser(ctx context.Context, userInfo *yandexUserInfo) 
 	userID := uuid.New().String()
 
 	avatarURL := ""
-	if userInfo.AvatarID != "" {
+	if userInfo.AvatarID != "" && userInfo.AvatarID != "0/0" {
 		avatarURL = "https://avatars.yandex.net/get-yapic/" + userInfo.AvatarID + "/islands-200"
 	}
 

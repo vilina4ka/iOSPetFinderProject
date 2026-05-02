@@ -62,6 +62,7 @@ func main() {
 
 		authorized.GET("/notifications", notificationsHandler.ListNotifications)
 		authorized.GET("/notifications/unread-count", notificationsHandler.UnreadCount)
+		authorized.POST("/notifications/:id/read", notificationsHandler.MarkRead)
 		authorized.POST("/notifications/read-all", notificationsHandler.MarkAllRead)
 
 		authorized.POST("/pets/:id/subscribe", subscriptionsHandler.Subscribe)
