@@ -36,4 +36,4 @@ services:
         condition: service_healthy
 
 volumes:
-  postgres_data:   # данные БД — не теряются при перезапуске
+  postgres_data: 

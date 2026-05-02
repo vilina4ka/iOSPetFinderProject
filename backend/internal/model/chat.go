@@ -11,6 +11,8 @@ type Message struct {
 	Text        string    `json:"text"`
 	IsRead      bool      `json:"is_read"`
 	CreatedAt   time.Time `json:"created_at"`
+	ImageURL    *string   `json:"image_url"`
+	FileName    *string   `json:"file_name"`
 }
 
 type ChatThread struct {

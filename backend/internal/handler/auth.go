@@ -65,6 +65,16 @@ func (h *AuthHandler) YandexCallback(c *gin.Context) {
 	c.Redirect(http.StatusFound, "lapki://auth?code="+code)
 }
 
+// @Summary     Авторизация через Яндекс
+// @Description Обменивает OAuth-код Яндекса на JWT токен приложения
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       body body LoginRequest true "OAuth код"
+// @Success     200 {object} LoginResponse
+// @Failure     400 {object} map[string]string
+// @Failure     401 {object} map[string]string
+// @Router      /auth/yandex [post]
 func (h *AuthHandler) YandexLogin(c *gin.Context) {
 	var req LoginRequest
 	if err := c.BindJSON(&req); err != nil {
@@ -99,6 +109,14 @@ func (h *AuthHandler) YandexLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, LoginResponse{Token: jwtToken, User: user})
 }
 
+// @Summary     Текущий пользователь
+// @Description Возвращает профиль авторизованного пользователя
+// @Tags        auth
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} model.User
+// @Failure     401 {object} map[string]string
+// @Router      /me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
@@ -118,6 +136,41 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+// @Summary     Публичный профиль пользователя
+// @Description Возвращает имя и аватар пользователя по ID
+// @Tags        auth
+// @Produce     json
+// @Security    BearerAuth
+// @Param       id path string true "User ID"
+// @Success     200 {object} map[string]string
+// @Failure     404 {object} map[string]string
+// @Router      /users/{id} [get]
+func (h *AuthHandler) GetUser(c *gin.Context) {
+	targetID := c.Param("id")
+	if targetID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Не указан ID пользователя"})
+		return
+	}
+
+	var id, name string
+	var avatarURL *string
+	err := h.pool.QueryRow(c.Request.Context(),
+		"SELECT id, name, avatar_url FROM users WHERE id = $1",
+		targetID,
+	).Scan(&id, &name, &avatarURL)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Пользователь не найден"})
+		return
+	}
+
+	avatar := ""
+	if avatarURL != nil {
+		avatar = *avatarURL
+	}
+	c.JSON(http.StatusOK, gin.H{"id": id, "name": name, "avatar_url": avatar})
 }
 
 func (h *AuthHandler) exchangeYandexCode(code string) (string, error) {
@@ -210,34 +263,6 @@ func (h *AuthHandler) upsertUser(ctx context.Context, userInfo *yandexUserInfo) 
 	return user, nil
 }
 
-func (h *AuthHandler) DevLogin(c *gin.Context) {
-	devUserID := "00000000-0000-0000-0000-000000000001"
-	devEmail := "test@lapki.dev"
-	devUser := &model.User{
-		ID:    devUserID,
-		Name:  "Тест Пользователь",
-		Email: &devEmail,
-	}
-
-	_, err := h.pool.Exec(c.Request.Context(),
-		`INSERT INTO users (id, yandex_id, name, email, created_at)
-		 VALUES ($1, $2, $3, $4, NOW())
-		 ON CONFLICT (yandex_id) DO UPDATE SET name = $3`,
-		devUserID, "dev-yandex-id-001", devUser.Name, devUser.Email,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сервера"})
-		return
-	}
-
-	token, err := h.generateToken(devUserID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка токена"})
-		return
-	}
-
-	c.JSON(http.StatusOK, LoginResponse{Token: token, User: devUser})
-}
 
 func (h *AuthHandler) generateToken(userID string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

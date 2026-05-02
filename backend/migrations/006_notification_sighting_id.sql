@@ -1,0 +1,1 @@
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS sighting_id UUID REFERENCES sightings(id) ON DELETE SET NULL;

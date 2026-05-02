@@ -1,0 +1,1014 @@
+basePath: /
+definitions:
+  handler.EditMessageRequest:
+    properties:
+      text:
+        type: string
+    required:
+    - text
+    type: object
+  handler.LoginRequest:
+    properties:
+      code:
+        type: string
+    required:
+    - code
+    type: object
+  handler.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  handler.SendMessageRequest:
+    properties:
+      file_name:
+        type: string
+      image_url:
+        type: string
+      recipient_id:
+        type: string
+      sighting_id:
+        type: string
+      text:
+        type: string
+    required:
+    - recipient_id
+    type: object
+  model.ChatThread:
+    properties:
+      last_message:
+        type: string
+      last_message_at:
+        type: string
+      other_user_avatar:
+        type: string
+      other_user_id:
+        type: string
+      other_user_name:
+        type: string
+      pet_id:
+        type: string
+      pet_image_url:
+        type: string
+      pet_name:
+        type: string
+      sighting_id:
+        type: string
+      unread_count:
+        type: integer
+    type: object
+  model.CreatePetRequest:
+    properties:
+      address:
+        type: string
+      age:
+        type: integer
+      breed:
+        type: string
+      contact_name:
+        type: string
+      contact_phone:
+        type: string
+      description:
+        type: string
+      external_signs:
+        type: string
+      image_urls:
+        items:
+          type: string
+        type: array
+      latitude:
+        type: number
+      longitude:
+        type: number
+      lost_date:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    required:
+    - address
+    - latitude
+    - longitude
+    - lost_date
+    - name
+    - type
+    type: object
+  model.Message:
+    properties:
+      created_at:
+        type: string
+      file_name:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_read:
+        type: boolean
+      pet_id:
+        type: string
+      recipient_id:
+        type: string
+      sender_id:
+        type: string
+      sighting_id:
+        type: string
+      text:
+        type: string
+    type: object
+  model.Notification:
+    properties:
+      body:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      is_read:
+        type: boolean
+      pet_id:
+        type: string
+      sighting_id:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      user_id:
+        type: string
+    type: object
+  model.Pet:
+    properties:
+      address:
+        type: string
+      age:
+        type: integer
+      breed:
+        type: string
+      contact_name:
+        type: string
+      contact_phone:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      external_signs:
+        type: string
+      id:
+        type: string
+      image_urls:
+        items:
+          type: string
+        type: array
+      latitude:
+        type: number
+      longitude:
+        type: number
+      lost_date:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+      status:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.Sighting:
+    properties:
+      address:
+        type: string
+      comment:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      image_urls:
+        items:
+          type: string
+        type: array
+      latitude:
+        type: number
+      longitude:
+        type: number
+      pet_id:
+        type: string
+      reporter_avatar:
+        type: string
+      reporter_id:
+        type: string
+      reporter_name:
+        type: string
+      status:
+        type: string
+    type: object
+  model.User:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      yandex_id:
+        type: string
+    type: object
+host: 178.154.198.101:8080
+info:
+  contact: {}
+  description: REST API приложения для поиска потерявшихся питомцев
+  title: Lapki API
+  version: "1.0"
+paths:
+  /auth/yandex:
+    post:
+      consumes:
+      - application/json
+      description: Обменивает OAuth-код Яндекса на JWT токен приложения
+      parameters:
+      - description: OAuth код
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Авторизация через Яндекс
+      tags:
+      - auth
+  /chats:
+    get:
+      description: Возвращает все диалоги текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.ChatThread'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Список чатов
+      tags:
+      - chat
+  /chats/{petID}:
+    get:
+      description: Возвращает сообщения чата по питомцу между двумя пользователями
+      parameters:
+      - description: Pet ID
+        in: path
+        name: petID
+        required: true
+        type: string
+      - description: ID собеседника
+        in: query
+        name: other_user_id
+        required: true
+        type: string
+      - description: Лимит (макс 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Message'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: История сообщений
+      tags:
+      - chat
+  /chats/{petID}/message:
+    post:
+      consumes:
+      - application/json
+      description: Отправляет текстовое сообщение или вложение в чат
+      parameters:
+      - description: Pet ID
+        in: path
+        name: petID
+        required: true
+        type: string
+      - description: Сообщение
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.SendMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отправить сообщение
+      tags:
+      - chat
+  /chats/{petID}/read:
+    post:
+      description: Помечает все сообщения в чате как прочитанные
+      parameters:
+      - description: Pet ID
+        in: path
+        name: petID
+        required: true
+        type: string
+      - description: ID собеседника
+        in: query
+        name: other_user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отметить сообщения прочитанными
+      tags:
+      - chat
+  /chats/message/{messageID}:
+    delete:
+      description: Удаляет сообщение (только отправитель)
+      parameters:
+      - description: Message ID
+        in: path
+        name: messageID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить сообщение
+      tags:
+      - chat
+    patch:
+      consumes:
+      - application/json
+      description: Изменяет текст сообщения (только отправитель)
+      parameters:
+      - description: Message ID
+        in: path
+        name: messageID
+        required: true
+        type: string
+      - description: Новый текст
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.EditMessageRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Редактировать сообщение
+      tags:
+      - chat
+  /me:
+    get:
+      description: Возвращает профиль авторизованного пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Текущий пользователь
+      tags:
+      - auth
+  /me/pets:
+    get:
+      description: Возвращает все объявления текущего пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Pet'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Мои объявления
+      tags:
+      - pets
+  /notifications:
+    get:
+      description: Возвращает последние 50 уведомлений пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Notification'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Список уведомлений
+      tags:
+      - notifications
+  /notifications/{id}/read:
+    post:
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отметить уведомление прочитанным
+      tags:
+      - notifications
+  /notifications/read-all:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отметить все уведомления прочитанными
+      tags:
+      - notifications
+  /notifications/unread-count:
+    get:
+      description: Возвращает число непрочитанных уведомлений
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Количество непрочитанных
+      tags:
+      - notifications
+  /pets:
+    get:
+      description: Геопоиск потерявшихся питомцев в заданном радиусе
+      parameters:
+      - description: Широта
+        in: query
+        name: lat
+        required: true
+        type: number
+      - description: Долгота
+        in: query
+        name: lon
+        required: true
+        type: number
+      - description: Радиус поиска в км (по умолчанию 5)
+        in: query
+        name: radius_km
+        type: number
+      - description: Текстовый поиск
+        in: query
+        name: search
+        type: string
+      - description: Тип животного (cat/dog)
+        in: query
+        name: pet_type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Pet'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Список объявлений
+      tags:
+      - pets
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новое объявление о пропавшем питомце
+      parameters:
+      - description: Данные питомца
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreatePetRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать объявление
+      tags:
+      - pets
+  /pets/{id}:
+    delete:
+      description: Удаляет объявление и все связанные данные (только владелец)
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить объявление
+      tags:
+      - pets
+    get:
+      description: Возвращает полную информацию об объявлении
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Pet'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Карточка питомца
+      tags:
+      - pets
+    put:
+      consumes:
+      - application/json
+      description: Редактирует данные питомца (только владелец)
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Обновлённые данные
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить объявление
+      tags:
+      - pets
+  /pets/{id}/sightings:
+    get:
+      description: Возвращает все наблюдения по объявлению
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Sighting'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Список наблюдений
+      tags:
+      - sightings
+    post:
+      consumes:
+      - application/json
+      description: Сообщает о месте, где видели питомца
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Координаты и комментарий
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Добавить наблюдение
+      tags:
+      - sightings
+  /pets/{id}/sightings/{sightingId}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Владелец меняет статус наблюдения (confirmed / rejected)
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Sighting ID
+        in: path
+        name: sightingId
+        required: true
+        type: string
+      - description: '{\'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Подтвердить / отклонить наблюдение
+      tags:
+      - sightings
+  /pets/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: 'Отмечает питомца как найденного (status: found)'
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: '{\'
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Сменить статус питомца
+      tags:
+      - pets
+  /pets/{id}/subscribe:
+    delete:
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отписаться от объявления
+      tags:
+      - subscriptions
+    post:
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Подписаться на объявление
+      tags:
+      - subscriptions
+  /pets/{id}/subscribed:
+    get:
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: boolean
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Статус подписки
+      tags:
+      - subscriptions
+  /subscriptions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Pet'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Список объявлений с подпиской
+      tags:
+      - subscriptions
+  /upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает изображение в Yandex Object Storage, возвращает публичный
+        URL
+      parameters:
+      - description: Файл изображения (макс 50 МБ)
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Загрузка фото
+      tags:
+      - upload
+  /users/{id}:
+    get:
+      description: Возвращает имя и аватар пользователя по ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Публичный профиль пользователя
+      tags:
+      - auth
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

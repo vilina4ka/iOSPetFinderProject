@@ -208,7 +208,7 @@ func (r *PostgresPetRepo) AddSighting(ctx context.Context, petID, reporterID str
 
 func (r *PostgresPetRepo) GetSightings(ctx context.Context, petID string) ([]model.Sighting, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT s.id, s.pet_id, s.reporter_id, COALESCE(u.name, ''),
+		`SELECT s.id, s.pet_id, s.reporter_id, COALESCE(u.name, ''), COALESCE(u.avatar_url, ''),
 		        s.latitude, s.longitude, s.address, s.comment, s.image_urls,
 		        COALESCE(s.status, 'pending'), s.created_at
 		 FROM sightings s
@@ -224,7 +224,7 @@ func (r *PostgresPetRepo) GetSightings(ctx context.Context, petID string) ([]mod
 	sightings := make([]model.Sighting, 0)
 	for rows.Next() {
 		var s model.Sighting
-		if err := rows.Scan(&s.ID, &s.PetID, &s.ReporterID, &s.ReporterName,
+		if err := rows.Scan(&s.ID, &s.PetID, &s.ReporterID, &s.ReporterName, &s.ReporterAvatar,
 			&s.Latitude, &s.Longitude, &s.Address, &s.Comment, &s.ImageURLs,
 			&s.Status, &s.CreatedAt); err != nil {
 			continue

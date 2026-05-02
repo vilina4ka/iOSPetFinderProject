@@ -1,88 +1,35 @@
 package handler
 
 import (
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/lapki/backend/internal/config"
-	"github.com/lapki/backend/internal/model"
-	"github.com/lapki/backend/internal/repository"
+	"github.com/lapki/backend/internal/service"
 )
 
 type ChatHandler struct {
-	pool  *pgxpool.Pool
-	notif repository.NotificationRepo
-	cfg   *config.Config
+	service *service.ChatService
+	hub     *Hub
 }
 
-func NewChatHandler(pool *pgxpool.Pool, notif repository.NotificationRepo, cfg *config.Config) *ChatHandler {
-	return &ChatHandler{pool: pool, notif: notif, cfg: cfg}
+func NewChatHandler(svc *service.ChatService, hub *Hub) *ChatHandler {
+	return &ChatHandler{service: svc, hub: hub}
 }
 
+// @Summary     Список чатов
+// @Description Возвращает все диалоги текущего пользователя
+// @Tags        chat
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {array}  model.ChatThread
+// @Router      /chats [get]
 func (h *ChatHandler) ListChats(c *gin.Context) {
 	userID := c.GetString("user_id")
-
-	rows, err := h.pool.Query(c.Request.Context(), `
-		WITH ranked AS (
-			SELECT
-				m.*,
-				ROW_NUMBER() OVER (
-					PARTITION BY m.pet_id,
-					             LEAST(m.sender_id, m.recipient_id), GREATEST(m.sender_id, m.recipient_id)
-					ORDER BY m.created_at DESC
-				) AS rn
-			FROM messages m
-			WHERE m.sender_id = $1 OR m.recipient_id = $1
-		)
-		SELECT
-			r.pet_id,
-			r.sighting_id,
-			p.name AS pet_name,
-			COALESCE(p.image_urls[1], '') AS pet_image_url,
-			CASE WHEN r.sender_id = $1 THEN r.recipient_id ELSE r.sender_id END AS other_user_id,
-			COALESCE(u.name, 'Аноним') AS other_user_name,
-			COALESCE(u.avatar_url, '') AS other_user_avatar,
-			r.text AS last_message,
-			r.created_at AS last_message_at,
-			(
-				SELECT COUNT(*) FROM messages m2
-				WHERE m2.pet_id = r.pet_id
-				  AND m2.recipient_id = $1
-				  AND NOT m2.is_read
-				  AND m2.sender_id = CASE WHEN r.sender_id = $1 THEN r.recipient_id ELSE r.sender_id END
-			) AS unread_count
-		FROM ranked r
-		JOIN pets p ON p.id = r.pet_id
-		JOIN users u ON u.id = CASE WHEN r.sender_id = $1 THEN r.recipient_id ELSE r.sender_id END
-		WHERE r.rn = 1
-		ORDER BY r.created_at DESC
-	`, userID)
+	threads, err := h.service.ListThreads(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сервера"})
 		return
-	}
-	defer rows.Close()
-
-	var threads []model.ChatThread
-	for rows.Next() {
-		var t model.ChatThread
-		if err := rows.Scan(
-			&t.PetID, &t.SightingID, &t.PetName, &t.PetImageURL,
-			&t.OtherUserID, &t.OtherUserName, &t.OtherUserAvatar,
-			&t.LastMessage, &t.LastMessageAt, &t.UnreadCount,
-		); err != nil {
-			continue
-		}
-		threads = append(threads, t)
-	}
-
-	if threads == nil {
-		threads = []model.ChatThread{}
 	}
 	c.JSON(http.StatusOK, threads)
 }
@@ -94,6 +41,17 @@ type GetMessagesRequest struct {
 	Offset      int    `form:"offset"`
 }
 
+// @Summary     История сообщений
+// @Description Возвращает сообщения чата по питомцу между двумя пользователями
+// @Tags        chat
+// @Produce     json
+// @Security    BearerAuth
+// @Param       petID        path  string true  "Pet ID"
+// @Param       other_user_id query string true  "ID собеседника"
+// @Param       limit         query int    false "Лимит (макс 100)"
+// @Param       offset        query int    false "Смещение"
+// @Success     200 {array}  model.Message
+// @Router      /chats/{petID} [get]
 func (h *ChatHandler) GetMessages(c *gin.Context) {
 	userID := c.GetString("user_id")
 	petID := c.Param("petID")
@@ -103,7 +61,6 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверные параметры"})
 		return
 	}
-
 	if req.Limit == 0 {
 		req.Limit = 50
 	}
@@ -111,50 +68,23 @@ func (h *ChatHandler) GetMessages(c *gin.Context) {
 		req.Limit = 100
 	}
 
-	var rows interface {
-		Next() bool
-		Scan(...any) error
-		Close()
-	}
-	var err error
-
-	if req.SightingID != "" {
-		rows, err = h.pool.Query(c.Request.Context(),
-			`SELECT id, pet_id, sighting_id, sender_id, recipient_id, text, is_read, created_at
-			 FROM messages
-			 WHERE pet_id = $1 AND sighting_id = $2
-			 AND ((sender_id = $3 AND recipient_id = $4) OR (sender_id = $4 AND recipient_id = $3))
-			 ORDER BY created_at DESC LIMIT $5 OFFSET $6`,
-			petID, req.SightingID, userID, req.OtherUserID, req.Limit, req.Offset,
-		)
-	} else {
-		rows, err = h.pool.Query(c.Request.Context(),
-			`SELECT id, pet_id, sighting_id, sender_id, recipient_id, text, is_read, created_at
-			 FROM messages
-			 WHERE pet_id = $1 AND sighting_id IS NULL
-			 AND ((sender_id = $2 AND recipient_id = $3) OR (sender_id = $3 AND recipient_id = $2))
-			 ORDER BY created_at DESC LIMIT $4 OFFSET $5`,
-			petID, userID, req.OtherUserID, req.Limit, req.Offset,
-		)
-	}
+	messages, err := h.service.GetMessages(c.Request.Context(), petID, userID, req.OtherUserID, req.SightingID, req.Limit, req.Offset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сервера"})
 		return
 	}
-	defer rows.Close()
-
-	var messages []model.Message
-	for rows.Next() {
-		var m model.Message
-		if err := rows.Scan(&m.ID, &m.PetID, &m.SightingID, &m.SenderID, &m.RecipientID, &m.Text, &m.IsRead, &m.CreatedAt); err != nil {
-			continue
-		}
-		messages = append(messages, m)
-	}
-
 	c.JSON(http.StatusOK, messages)
 }
 
+// @Summary     Отметить сообщения прочитанными
+// @Description Помечает все сообщения в чате как прочитанные
+// @Tags        chat
+// @Produce     json
+// @Security    BearerAuth
+// @Param       petID        path  string true "Pet ID"
+// @Param       other_user_id query string true "ID собеседника"
+// @Success     200 {object} map[string]bool
+// @Router      /chats/{petID}/read [post]
 func (h *ChatHandler) MarkMessagesRead(c *gin.Context) {
 	userID := c.GetString("user_id")
 	petID := c.Param("petID")
@@ -165,27 +95,31 @@ func (h *ChatHandler) MarkMessagesRead(c *gin.Context) {
 		return
 	}
 
-	_, err := h.pool.Exec(c.Request.Context(),
-		`UPDATE messages SET is_read = true
-		 WHERE pet_id = $1 AND recipient_id = $2 AND sender_id = $3 AND NOT is_read`,
-		petID, userID, otherUserID,
-	)
-	if err != nil {
+	if err := h.service.MarkRead(c.Request.Context(), petID, userID, otherUserID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка сервера"})
 		return
 	}
-
-	_ = h.notif.MarkReadByPetAndType(c.Request.Context(), userID, petID, "message")
-
 	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 type SendMessageRequest struct {
 	RecipientID string  `json:"recipient_id" binding:"required"`
-	Text        string  `json:"text" binding:"required"`
+	Text        string  `json:"text"`
 	SightingID  *string `json:"sighting_id"`
+	ImageURL    *string `json:"image_url"`
+	FileName    *string `json:"file_name"`
 }
 
+// @Summary     Отправить сообщение
+// @Description Отправляет текстовое сообщение или вложение в чат
+// @Tags        chat
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       petID path string true "Pet ID"
+// @Param       body  body SendMessageRequest true "Сообщение"
+// @Success     201 {object} map[string]string
+// @Router      /chats/{petID}/message [post]
 func (h *ChatHandler) SendMessage(c *gin.Context) {
 	userID := c.GetString("user_id")
 	petID := c.Param("petID")
@@ -196,27 +130,68 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		return
 	}
 
-	messageID := uuid.New().String()
-	now := time.Now()
+	if req.Text == "" && req.ImageURL == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Необходимо указать текст или вложение"})
+		return
+	}
 
-	_, err := h.pool.Exec(c.Request.Context(),
-		`INSERT INTO messages (id, pet_id, sighting_id, sender_id, recipient_id, text, is_read, created_at)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		messageID, petID, req.SightingID, userID, req.RecipientID, req.Text, false, now,
-	)
+	id, createdAt, err := h.service.SendMessage(c.Request.Context(), petID, req.SightingID, userID, req.RecipientID, req.Text, req.ImageURL, req.FileName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при отправке сообщения"})
 		return
 	}
+	c.JSON(http.StatusCreated, gin.H{"id": id, "createdAt": createdAt})
+}
 
-	notif := h.notif
-	petIDCopy := petID
-	textCopy := req.Text
-	go func() {
-		_ = notif.Create(context.Background(), req.RecipientID, "message", petIDCopy, "Новое сообщение", textCopy)
-	}()
+// @Summary     Удалить сообщение
+// @Description Удаляет сообщение (только отправитель)
+// @Tags        chat
+// @Produce     json
+// @Security    BearerAuth
+// @Param       messageID path string true "Message ID"
+// @Success     200 {object} map[string]bool
+// @Failure     403 {object} map[string]string
+// @Router      /chats/message/{messageID} [delete]
+func (h *ChatHandler) DeleteMessage(c *gin.Context) {
+	userID := c.GetString("user_id")
+	messageID := c.Param("messageID")
 
-	c.JSON(http.StatusCreated, gin.H{"id": messageID, "createdAt": now})
+	if err := h.service.DeleteMessage(c.Request.Context(), messageID, userID); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Сообщение не найдено или нет прав"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
+
+type EditMessageRequest struct {
+	Text string `json:"text" binding:"required"`
+}
+
+// @Summary     Редактировать сообщение
+// @Description Изменяет текст сообщения (только отправитель)
+// @Tags        chat
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       messageID path string true "Message ID"
+// @Param       body      body EditMessageRequest true "Новый текст"
+// @Success     200 {object} map[string]bool
+// @Failure     403 {object} map[string]string
+// @Router      /chats/message/{messageID} [patch]
+func (h *ChatHandler) EditMessage(c *gin.Context) {
+	userID := c.GetString("user_id")
+	messageID := c.Param("messageID")
+
+	var req EditMessageRequest
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Неверный формат данных"})
+		return
+	}
+	if err := h.service.EditMessage(c.Request.Context(), messageID, userID, req.Text); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Сообщение не найдено или нет прав"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
 }
 
 var upgrader = websocket.Upgrader{
@@ -225,25 +200,37 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-type wsMessage struct {
-	Type      string    `json:"type"`
-	Text      string    `json:"text,omitempty"`
-	SenderID  string    `json:"sender_id,omitempty"`
-	Timestamp time.Time `json:"timestamp,omitempty"`
-}
-
 func (h *ChatHandler) WebSocket(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Не авторизован"})
+		return
+	}
+
 	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
-	defer ws.Close()
 
+	client := h.hub.Register(userID, ws)
+	defer func() {
+		h.hub.Unregister(userID)
+		ws.Close()
+	}()
+
+	// Write pump: forwards messages from hub to WebSocket.
+	go func() {
+		for msg := range client.send {
+			if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
+				return
+			}
+		}
+	}()
+
+	// Read pump: keeps the connection alive and handles client-side pings.
 	for {
-		var msg wsMessage
-		if err := ws.ReadJSON(&msg); err != nil {
+		if _, _, err := ws.ReadMessage(); err != nil {
 			break
 		}
-		_ = msg
 	}
 }

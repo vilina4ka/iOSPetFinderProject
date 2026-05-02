@@ -9,8 +9,22 @@ import (
 	"github.com/lapki/backend/internal/handler"
 	"github.com/lapki/backend/internal/middleware"
 	"github.com/lapki/backend/internal/repository"
+	"github.com/lapki/backend/internal/service"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/lapki/backend/docs"
 )
 
+// @title           Lapki API
+// @version         1.0
+// @description     REST API приложения для поиска потерявшихся питомцев
+// @host            178.154.198.101:8080
+// @BasePath        /
+// @schemes         http
+// @securityDefinitions.apikey BearerAuth
+// @in              header
+// @name            Authorization
 func main() {
 	cfg := config.LoadConfig()
 
@@ -20,22 +34,38 @@ func main() {
 	}
 	defer pool.Close()
 
+	// Repositories
 	petRepo := repository.NewPostgresPetRepo(pool)
 	notifRepo := repository.NewPostgresNotificationRepo(pool)
 	subsRepo := repository.NewPostgresSubscriptionRepo(pool)
+	chatRepo := repository.NewPostgresChatRepo(pool)
 
-	router := gin.Default()
+	// Services
+	petService := service.NewPetService(petRepo, notifRepo, subsRepo)
+	chatService := service.NewChatService(chatRepo, notifRepo)
 
+	// WebSocket hub
+	hub := handler.NewHub()
+
+	// Wire hub into chat service for real-time delivery.
+	chatService.Notify = hub.Send
+
+	// Handlers
+	webHandler := handler.NewWebHandler(petService)
 	authHandler := handler.NewAuthHandler(pool, cfg)
-	petsHandler := handler.NewPetsHandler(petRepo, notifRepo, subsRepo, cfg)
+	petsHandler := handler.NewPetsHandler(petService)
 	uploadHandler := handler.NewUploadHandler(cfg)
-	chatHandler := handler.NewChatHandler(pool, notifRepo, cfg)
+	chatHandler := handler.NewChatHandler(chatService, hub)
 	notificationsHandler := handler.NewNotificationsHandler(notifRepo, cfg)
 	subscriptionsHandler := handler.NewSubscriptionsHandler(subsRepo, cfg)
 
+	router := gin.Default()
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	router.GET("/view/pets/:id", webHandler.PetPage)
+
 	router.POST("/auth/yandex", authHandler.YandexLogin)
 	router.GET("/auth/callback", authHandler.YandexCallback)
-	router.POST("/auth/dev-login", authHandler.DevLogin)
 
 	authorized := router.Group("/")
 	authorized.Use(middleware.RequireAuth(cfg.JWTSecret))
@@ -57,8 +87,10 @@ func main() {
 		authorized.GET("/chats", chatHandler.ListChats)
 		authorized.GET("/chats/:petID", chatHandler.GetMessages)
 		authorized.POST("/chats/:petID/read", chatHandler.MarkMessagesRead)
-		authorized.GET("/ws/chats/:petID", chatHandler.WebSocket)
+		authorized.GET("/ws", chatHandler.WebSocket)
 		authorized.POST("/chats/:petID/message", chatHandler.SendMessage)
+		authorized.DELETE("/chats/message/:messageID", chatHandler.DeleteMessage)
+		authorized.PATCH("/chats/message/:messageID", chatHandler.EditMessage)
 
 		authorized.GET("/notifications", notificationsHandler.ListNotifications)
 		authorized.GET("/notifications/unread-count", notificationsHandler.UnreadCount)
@@ -71,6 +103,7 @@ func main() {
 		authorized.GET("/subscriptions", subscriptionsHandler.ListSubscribed)
 
 		authorized.GET("/me", authHandler.Me)
+		authorized.GET("/users/:id", authHandler.GetUser)
 	}
 
 	if err := router.Run(":" + cfg.Port); err != nil {

@@ -27,7 +27,7 @@ func RequireAuth(jwtSecret string) gin.HandlerFunc {
 
 		token, err := jwt.ParseWithClaims(parts[1], jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				return nil, fmt.Errorf("Неизвестный метод входа: %v", token.Header["alg"])
 			}
 			return []byte(jwtSecret), nil
 		})

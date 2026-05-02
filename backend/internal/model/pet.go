@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Pet struct {
 	ID            string     `json:"id"`
@@ -51,15 +53,16 @@ type ListPetsRequest struct {
 }
 
 type Sighting struct {
-	ID           string    `json:"id"`
-	PetID        string    `json:"pet_id"`
-	ReporterID   string    `json:"reporter_id"`
-	ReporterName string    `json:"reporter_name"`
-	Latitude     float64   `json:"latitude"`
-	Longitude    float64   `json:"longitude"`
-	Address      string    `json:"address"`
-	Comment      string    `json:"comment"`
-	ImageURLs    []string  `json:"image_urls"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	PetID          string    `json:"pet_id"`
+	ReporterID     string    `json:"reporter_id"`
+	ReporterName   string    `json:"reporter_name"`
+	ReporterAvatar string    `json:"reporter_avatar"`
+	Latitude       float64   `json:"latitude"`
+	Longitude      float64   `json:"longitude"`
+	Address        string    `json:"address"`
+	Comment        string    `json:"comment"`
+	ImageURLs      []string  `json:"image_urls"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
 }

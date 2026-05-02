@@ -9,12 +9,13 @@ import (
 )
 
 type NotificationRepo interface {
-	Create(ctx context.Context, userID, notifType, petID, title, body string) error
+	Create(ctx context.Context, userID, notifType, petID string, sightingID *string, title, body string) error
 	ListByUser(ctx context.Context, userID string) ([]model.Notification, error)
 	UnreadCount(ctx context.Context, userID string) (int, error)
 	MarkRead(ctx context.Context, userID, notifID string) error
 	MarkReadByPetAndType(ctx context.Context, userID, petID, notifType string) error
 	MarkAllRead(ctx context.Context, userID string) error
+	MarkMessageDeleted(ctx context.Context, recipientID, petID, oldBody string) error
 }
 
 type PostgresNotificationRepo struct {
@@ -25,10 +26,10 @@ func NewPostgresNotificationRepo(pool *pgxpool.Pool) *PostgresNotificationRepo {
 	return &PostgresNotificationRepo{pool: pool}
 }
 
-func (r *PostgresNotificationRepo) Create(ctx context.Context, userID, notifType, petID, title, body string) error {
+func (r *PostgresNotificationRepo) Create(ctx context.Context, userID, notifType, petID string, sightingID *string, title, body string) error {
 	_, err := r.pool.Exec(ctx,
-		`INSERT INTO notifications (user_id, type, pet_id, title, body) VALUES ($1, $2, $3, $4, $5)`,
-		userID, notifType, petID, title, body,
+		`INSERT INTO notifications (user_id, type, pet_id, sighting_id, title, body) VALUES ($1, $2, $3, $4, $5, $6)`,
+		userID, notifType, petID, sightingID, title, body,
 	)
 	if err != nil {
 		return fmt.Errorf("notifications create: %w", err)
@@ -38,7 +39,7 @@ func (r *PostgresNotificationRepo) Create(ctx context.Context, userID, notifType
 
 func (r *PostgresNotificationRepo) ListByUser(ctx context.Context, userID string) ([]model.Notification, error) {
 	rows, err := r.pool.Query(ctx,
-		`SELECT id, user_id, type, pet_id, title, body, is_read, created_at
+		`SELECT id, user_id, type, pet_id, sighting_id, title, body, is_read, created_at
 		 FROM notifications WHERE user_id = $1
 		 ORDER BY created_at DESC LIMIT 50`,
 		userID,
@@ -51,7 +52,7 @@ func (r *PostgresNotificationRepo) ListByUser(ctx context.Context, userID string
 	notifications := make([]model.Notification, 0)
 	for rows.Next() {
 		var n model.Notification
-		if err := rows.Scan(&n.ID, &n.UserID, &n.Type, &n.PetID, &n.Title, &n.Body, &n.IsRead, &n.CreatedAt); err != nil {
+		if err := rows.Scan(&n.ID, &n.UserID, &n.Type, &n.PetID, &n.SightingID, &n.Title, &n.Body, &n.IsRead, &n.CreatedAt); err != nil {
 			continue
 		}
 		notifications = append(notifications, n)
@@ -100,6 +101,19 @@ func (r *PostgresNotificationRepo) MarkAllRead(ctx context.Context, userID strin
 	)
 	if err != nil {
 		return fmt.Errorf("notifications mark read: %w", err)
+	}
+	return nil
+}
+
+func (r *PostgresNotificationRepo) MarkMessageDeleted(ctx context.Context, recipientID, petID, oldBody string) error {
+	_, err := r.pool.Exec(ctx,
+		`UPDATE notifications
+		 SET body = 'Сообщение удалено', title = 'Сообщение удалено'
+		 WHERE user_id = $1 AND pet_id = $2 AND type = 'message' AND body = $3 AND is_read = FALSE`,
+		recipientID, petID, oldBody,
+	)
+	if err != nil {
+		return fmt.Errorf("notifications mark message deleted: %w", err)
 	}
 	return nil
 }
