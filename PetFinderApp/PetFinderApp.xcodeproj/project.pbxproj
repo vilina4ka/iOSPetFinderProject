@@ -8,15 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0A01495A2E74663C00912C93 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 0A0149592E74663C00912C93 /* Kingfisher */; };
+		0A1F10B92F956DA5003BAB69 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = 0A1F10B82F956DA5003BAB69 /* KeychainAccess */; };
 		0A246A2A2E7709A4009C1716 /* YandexMapsMobile.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */; };
 		0A246A2B2E7709A4009C1716 /* YandexMapsMobile.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0A89475C2E746E25002E1C66 /* YandexMapsMobile.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0A3FCE772E746847006A1EC9 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE762E746847006A1EC9 /* Kingfisher */; };
-		0A3FCE7A2E746886006A1EC9 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE792E746886006A1EC9 /* Auth */; };
-		0A3FCE7C2E746886006A1EC9 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7B2E746886006A1EC9 /* Functions */; };
-		0A3FCE7E2E746886006A1EC9 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7D2E746886006A1EC9 /* PostgREST */; };
-		0A3FCE802E746886006A1EC9 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE7F2E746886006A1EC9 /* Realtime */; };
-		0A3FCE822E746886006A1EC9 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE812E746886006A1EC9 /* Storage */; };
-		0A3FCE842E746895006A1EC9 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 0A3FCE832E746895006A1EC9 /* Supabase */; };
 		43C75B8ACEF4FFABC81C349D /* Pods_PetFinderApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A57113CA93E5BDF13978D425 /* Pods_PetFinderApp.framework */; };
 /* End PBXBuildFile section */
 
@@ -68,16 +63,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A3FCE802E746886006A1EC9 /* Realtime in Frameworks */,
-				0A3FCE7E2E746886006A1EC9 /* PostgREST in Frameworks */,
-				0A3FCE7C2E746886006A1EC9 /* Functions in Frameworks */,
 				0A01495A2E74663C00912C93 /* Kingfisher in Frameworks */,
-				0A3FCE822E746886006A1EC9 /* Storage in Frameworks */,
 				0A246A2A2E7709A4009C1716 /* YandexMapsMobile.xcframework in Frameworks */,
-				0A3FCE842E746895006A1EC9 /* Supabase in Frameworks */,
 				0A3FCE772E746847006A1EC9 /* Kingfisher in Frameworks */,
-				0A3FCE7A2E746886006A1EC9 /* Auth in Frameworks */,
 				43C75B8ACEF4FFABC81C349D /* Pods_PetFinderApp.framework in Frameworks */,
+				0A1F10B92F956DA5003BAB69 /* KeychainAccess in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -172,7 +162,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				0A1F10B72F956DA5003BAB69 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0A1DD6032E6E329A003F7460 /* Products */;
@@ -462,12 +452,12 @@
 				minimumVersion = 8.5.0;
 			};
 		};
-		0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+		0A1F10B72F956DA5003BAB69 /* XCRemoteSwiftPackageReference "KeychainAccess" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			repositoryURL = "https://github.com/kishikawakatsumi/KeychainAccess";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.5.1;
+				branch = master;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -478,40 +468,15 @@
 			package = 0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
 		};
+		0A1F10B82F956DA5003BAB69 /* KeychainAccess */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0A1F10B72F956DA5003BAB69 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
+			productName = KeychainAccess;
+		};
 		0A3FCE762E746847006A1EC9 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0A0149582E74663C00912C93 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
-		};
-		0A3FCE792E746886006A1EC9 /* Auth */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Auth;
-		};
-		0A3FCE7B2E746886006A1EC9 /* Functions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Functions;
-		};
-		0A3FCE7D2E746886006A1EC9 /* PostgREST */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = PostgREST;
-		};
-		0A3FCE7F2E746886006A1EC9 /* Realtime */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Realtime;
-		};
-		0A3FCE812E746886006A1EC9 /* Storage */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Storage;
-		};
-		0A3FCE832E746895006A1EC9 /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0A3FCE782E746886006A1EC9 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
